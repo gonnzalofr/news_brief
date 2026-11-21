@@ -1,0 +1,183 @@
+{
+ "date": "2026-11-22",
+ "issued": "2026-11-22T07:00:00+01:00",
+ "window_start": "2026-11-20T19:00:00+01:00",
+ "window_end": "2026-11-22T07:00:00+01:00",
+ "candidates": 187,
+ "stories": [
+  {
+   "id": "b3ba64e9-9482-4525-acc7-49825f3daace",
+   "url": "https://www.ft.com/content/b3ba64e9-9482-4525-acc7-49825f3daace",
+   "headline": "EU raises the prospect of ‘no deal’ at COP31",
+   "summary": "The EU is escalating its tactics as Saudi Arabia leads opposition to any fossil fuel phase-out in the final agreement. The talks had already dropped the phase-out on Friday in favour of carbon capture, and critics say the last sessions are now about energy security rather than climate.",
+   "weight": 5,
+   "topics": [
+    "Climate",
+    "Energy",
+    "EU"
+   ],
+   "place": "Antalya",
+   "published": "2026-11-21T18:07:02+00:00",
+   "also": []
+  },
+  {
+   "id": "9f3c6ed6-c08f-4710-9683-ee2f5eb25841",
+   "url": "https://www.ft.com/content/9f3c6ed6-c08f-4710-9683-ee2f5eb25841",
+   "headline": "US tech stocks plunge into a bear market",
+   "summary": "The Nasdaq 100 ended its worst week since the Covid-19 crisis in a bear market. Anthropic shares fell 8.5% a day after their blockbuster debut, as fears over the AI spending boom sent investors toward havens.",
+   "weight": 5,
+   "topics": [
+    "AI",
+    "US markets"
+   ],
+   "place": "New York",
+   "published": "2026-11-20T21:52:25+00:00",
+   "also": []
+  },
+  {
+   "id": "5fbc2b9d-0360-4a1f-9e4a-3e86168cbbc5",
+   "url": "https://www.ft.com/content/5fbc2b9d-0360-4a1f-9e4a-3e86168cbbc5",
+   "headline": "Oil through Hormuz falls as Iranian strikes increase",
+   "summary": "Crude shipments through the strait are dropping again. One analyst calls the recovery in Middle Eastern exports “increasingly fragile”.",
+   "weight": 4,
+   "topics": [
+    "Energy",
+    "Iran",
+    "Oil"
+   ],
+   "place": "Strait of Hormuz",
+   "published": "2026-11-21T05:00:35+00:00",
+   "also": []
+  },
+  {
+   "id": "9b28ed72-aac4-4291-9734-bf60b66645ab",
+   "url": "https://www.ft.com/content/9b28ed72-aac4-4291-9734-bf60b66645ab",
+   "headline": "Nvidia faces an SEC probe into its accounting",
+   "summary": "The investigation adds to the chipmaker’s troubles after Jensen Huang’s resignation. Western officials say the affair has also put China’s Ministry of State Security in the spotlight.",
+   "weight": 4,
+   "topics": [
+    "AI",
+    "Chips",
+    "China"
+   ],
+   "place": "Santa Clara",
+   "published": "2026-11-20T21:58:08+00:00",
+   "also": []
+  },
+  {
+   "id": "90a8d0bd-32c8-471a-8696-e95555e41b78",
+   "url": "https://www.ft.com/content/90a8d0bd-32c8-471a-8696-e95555e41b78",
+   "headline": "Violence erupts in Sinaloa after Mexico captures “El Chapo Isidro”",
+   "summary": "Fausto Isidro Meza-Flores is on the FBI’s most-wanted list for trafficking drugs into the US. His capture set off violence across the state.",
+   "weight": 3,
+   "topics": [
+    "Latin America",
+    "Drugs"
+   ],
+   "place": "Culiacán",
+   "published": "2026-11-21T17:52:20+00:00",
+   "also": []
+  },
+  {
+   "id": "53d9f3ef-e0cc-4605-8203-180a97d0d404",
+   "url": "https://www.ft.com/content/53d9f3ef-e0cc-4605-8203-180a97d0d404",
+   "headline": "Bukele sends 2,000 Salvadoran troops into Haiti",
+   "summary": "El Salvador’s president has deployed the troops to the Caribbean nation, and thousands of Haitians have greeted them with adulation.",
+   "weight": 3,
+   "topics": [
+    "Latin America",
+    "Security"
+   ],
+   "place": "Port-au-Prince",
+   "published": "2026-11-21T05:00:35+00:00",
+   "also": []
+  },
+  {
+   "id": "339c3a72-bce5-44ed-bc6c-c8a8199cfb40",
+   "url": "https://www.ft.com/content/339c3a72-bce5-44ed-bc6c-c8a8199cfb40",
+   "headline": "The drone war sends optical fibre prices soaring",
+   "summary": "Fibre-guided drones resist jamming, and the fibre now costs six times as much. The price surge threatens the drone advantage Kyiv has built.",
+   "weight": 3,
+   "topics": [
+    "Ukraine",
+    "Defence",
+    "Commodities"
+   ],
+   "place": "Kyiv",
+   "published": "2026-11-21T05:00:08+00:00",
+   "also": []
+  },
+  {
+   "id": "2e9c54a8-e2c5-4334-8141-9791267ae3c3",
+   "url": "https://www.ft.com/content/2e9c54a8-e2c5-4334-8141-9791267ae3c3",
+   "headline": "Costa revives a digital tax to close the EU budget deal",
+   "summary": "The latest seven-year plan scales back spending but would still be about a quarter larger than the current budget.",
+   "weight": 3,
+   "topics": [
+    "EU",
+    "Tax"
+   ],
+   "place": "Brussels",
+   "published": "2026-11-21T11:38:04+00:00",
+   "also": []
+  },
+  {
+   "id": "dc7749dc-0f40-44a6-80bc-7f747d383616",
+   "url": "https://www.ft.com/content/dc7749dc-0f40-44a6-80bc-7f747d383616",
+   "headline": "Amazon closes in on a $7.5bn deal for AI start-up Decart",
+   "summary": "The purchase would help AWS compete with Nvidia in the race for computing power.",
+   "weight": 2,
+   "topics": [
+    "AI",
+    "Cloud"
+   ],
+   "place": "Seattle",
+   "published": "2026-11-21T17:21:36+00:00",
+   "also": []
+  }
+ ],
+ "lines": [
+  {
+   "id": "e7d36416-9eb7-4479-a217-d593545499df",
+   "url": "https://www.ft.com/content/e7d36416-9eb7-4479-a217-d593545499df",
+   "text": "Bayer’s $7.25bn settlement over cancer cases is approved by a US judge.",
+   "published": "2026-11-20T23:16:28+00:00"
+  },
+  {
+   "id": "b84dbcb1-f216-422e-89c7-f203e0ab2757",
+   "url": "https://www.ft.com/content/b84dbcb1-f216-422e-89c7-f203e0ab2757",
+   "text": "Traders start moving US copper to China as tariff fears ease.",
+   "published": "2026-11-21T12:00:08+00:00"
+  },
+  {
+   "id": "b647fcba-e5e6-4ca2-8417-8c9146eac39e",
+   "url": "https://www.ft.com/content/b647fcba-e5e6-4ca2-8417-8c9146eac39e",
+   "text": "Builders bet on a €620bn boom in European defence infrastructure.",
+   "published": "2026-11-21T05:00:07+00:00"
+  },
+  {
+   "id": "c893d0fa-ba27-4a3c-bfb6-4df3ccb7e6cc",
+   "url": "https://www.ft.com/content/c893d0fa-ba27-4a3c-bfb6-4df3ccb7e6cc",
+   "text": "US retailers head for a strong holiday season despite gloomy surveys.",
+   "published": "2026-11-21T12:00:08+00:00"
+  }
+ ],
+ "reads": [
+  {
+   "id": "cd4ecaf3-0ded-4830-94a8-4d9c24098c07",
+   "url": "https://www.ft.com/content/cd4ecaf3-0ded-4830-94a8-4d9c24098c07",
+   "headline": "The chip war’s next battleground",
+   "note": "As the US–China AI rivalry intensifies, the focus moves to supply chains.",
+   "published": "2026-11-21T05:00:36+00:00"
+  },
+  {
+   "id": "67adfdc6-4cf9-4f7b-b751-f631535862d8",
+   "url": "https://www.ft.com/content/67adfdc6-4cf9-4f7b-b751-f631535862d8",
+   "headline": "Martin Wolf on the US midterms",
+   "note": "With historian Heather Cox Richardson on what the next two years may bring.",
+   "published": "2026-11-21T05:00:00+00:00"
+  }
+ ],
+ "writer": "claude-opus-5-5 (Claude)",
+ "failures": []
+}
