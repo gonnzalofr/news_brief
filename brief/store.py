@@ -1,4 +1,5 @@
-"""Briefs on disk: DATA_DIR/briefs/<YYYY-MM-DD>.json, one a day, and state.json for the last run."""
+"""Briefs on disk: DATA_DIR/briefs/<YYYY-MM-DD>.json, one a day, state.json for the last run, and
+pending.json between `fetch` and `ingest`."""
 
 from __future__ import annotations
 
@@ -46,6 +47,10 @@ class Store:
             return None
         return Brief.from_dict(json.loads(path.read_text(encoding="utf-8")))
 
+    def latest(self) -> Brief | None:
+        ds = self.dates()
+        return self.load(ds[-1]) if ds else None
+
     def latest_before(self, day: str) -> Brief | None:
         earlier = [d for d in self.dates() if d < day]
         return self.load(earlier[-1]) if earlier else None
@@ -66,3 +71,19 @@ class Store:
     def set_state(self, **values: object) -> None:
         state = self.state() | values
         _write(self.root / "state.json", json.dumps(state, ensure_ascii=False, indent=1))
+
+    @property
+    def pending_path(self) -> Path:
+        return self.root / "pending.json"
+
+    def save_pending(self, pending: dict) -> None:
+        _write(self.pending_path, json.dumps(pending, ensure_ascii=False, indent=1))
+
+    def load_pending(self) -> dict | None:
+        try:
+            return json.loads(self.pending_path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            return None
+
+    def clear_pending(self) -> None:
+        self.pending_path.unlink(missing_ok=True)

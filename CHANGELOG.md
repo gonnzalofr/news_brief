@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- `BRIEF_MODE=external`: `serve` serves the pages but writes no brief, for an agent on the
+  machine that writes it instead of the model APIs.
+- `python -m brief fetch`: the window's FT items, the editor's instructions and the answer's
+  schema as one JSON object; the items are kept in `/data/pending.json`.
+- `python -m brief ingest`: checks an agent's answer against those items, listing every
+  problem when it doesn't hold up, then saves and pushes the brief. `--fallback` sends the FT's
+  own headlines.
+- `python -m brief latest --json` and `GET /api/latest.json`: the latest brief as JSON.
+
 ## 0.1.0 (21 Nov 2026)
 
 The first version.

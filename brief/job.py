@@ -27,6 +27,31 @@ def window(store: Store, cfg: Config, now: datetime) -> tuple[datetime, datetime
     return max(start, earliest), now
 
 
+def collect(
+    cfg: Config, store: Store, now: datetime, push: bool = True, fetch: Callable = feeds.fetch, send: Callable = notify.send
+) -> tuple[datetime, datetime, list[feeds.Article], list[str]]:
+    """The window, the articles in it and the feeds that failed. Raises NoFeeds, pushed, when all failed."""
+    store.set_state(last_attempt=iso(now))
+    start, end = window(store, cfg, now)
+    articles, feed_errors = fetch(cfg.feeds)
+    if not articles:
+        msg = "Every FT feed failed: " + "; ".join(feed_errors)[:500]
+        store.set_state(last_error=msg)
+        if push:
+            send(cfg.ntfy_url, cfg.ntfy_token, "Morning brief failed", msg, priority=4, tags=["warning"])
+        raise NoFeeds(msg)
+    candidates = feeds.in_window(articles, start, end)
+    log.info("%d articles from %d feeds, %d in the window", len(articles), len(cfg.feeds), len(candidates))
+    return start, end, candidates, feed_errors
+
+
+def publish(cfg: Config, store: Store, brief: Brief, push: bool = True, send: Callable = notify.send) -> bool:
+    """Saves the brief, records the success, and pushes it. True when the push went out."""
+    store.save(brief)
+    store.set_state(last_success=brief.issued, last_error="", last_writer=brief.writer)
+    return _push(cfg, brief, send) if push else False
+
+
 def run(
     cfg: Config,
     store: Store,
@@ -37,18 +62,7 @@ def run(
     send: Callable = notify.send,
 ) -> Brief:
     now = (now or datetime.now(cfg.tz)).astimezone(cfg.tz)
-    store.set_state(last_attempt=iso(now))
-    start, end = window(store, cfg, now)
-
-    articles, feed_errors = fetch(cfg.feeds)
-    if not articles:
-        msg = "Every FT feed failed: " + "; ".join(feed_errors)[:500]
-        store.set_state(last_error=msg)
-        if push:
-            send(cfg.ntfy_url, cfg.ntfy_token, "Morning brief failed", msg, priority=4, tags=["warning"])
-        raise NoFeeds(msg)
-    candidates = feeds.in_window(articles, start, end)
-    log.info("%d articles from %d feeds, %d in the window", len(articles), len(cfg.feeds), len(candidates))
+    start, end, candidates, feed_errors = collect(cfg, store, now, push, fetch, send)
 
     stories, lines, reads, writer, failures = [], [], [], "", []
     if candidates:
@@ -78,15 +92,11 @@ def run(
         writer=writer,
         failures=failures + [f"feed {x}" for x in feed_errors],
     )
-    store.save(brief)
-    store.set_state(last_success=iso(now), last_error="", last_writer=writer)
-
-    if push:
-        _push(cfg, brief, send)
+    publish(cfg, store, brief, push, send)
     return brief
 
 
-def _push(cfg: Config, brief: Brief, send: Callable) -> None:
+def _push(cfg: Config, brief: Brief, send: Callable) -> bool:
     day = datetime.fromisoformat(brief.issued)
     title = f"Morning brief · {day.strftime('%a %d %b')}"
     if not brief.stories:
@@ -98,5 +108,5 @@ def _push(cfg: Config, brief: Brief, send: Callable) -> None:
     if brief.stories and not brief.writer:
         lines.append("No model could write it today: these are the FT's own headlines.")
     click = f"{cfg.brief_url}/{brief.date}" if cfg.brief_url else ""
-    send(cfg.ntfy_url, cfg.ntfy_token, title, "\n".join(lines), click=click,
+    return send(cfg.ntfy_url, cfg.ntfy_token, title, "\n".join(lines), click=click,
          priority=3 if brief.writer or not brief.stories else 4, tags=["newspaper"])

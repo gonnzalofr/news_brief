@@ -16,8 +16,14 @@ reach here are repeated below.
 - **Claude, then Gemini, then OpenAI**, each through its own official SDK (`brief/llm.py`). A
   new provider is one more class with `configured()` and `complete()`, added to `providers()`.
   Any failure moves on to the next; no provider is retried in a loop.
+- **Or an agent writes it** (`BRIEF_MODE=external`, `brief/external.py`): `fetch` hands it
+  `prompt.SYSTEM`, `prompt.SCHEMA` and `prompt.AGENT`, and `ingest` checks the answer with
+  `model.problems` (strict, every problem listed, read from `SCHEMA`) before the same
+  `model.from_model`. The editorial rules stay in `prompt.py` for every writer; a rule added to
+  `SYSTEM` that can be checked goes in `problems` too.
 - **A brief always goes out.** If every model fails, the FT's headlines go out instead; only
-  every feed failing stops a run, and that is pushed too.
+  every feed failing stops a run, and that is pushed too. In external mode that is the
+  agent's job (`ingest --fallback` when it can't write one); `/readyz` is the alarm if it doesn't.
 - **Model text is untrusted.** Everything from a model or a feed is escaped in `render.py`, and
   `model.from_model` keeps only ids that were in the input.
 - **Exact versions**: `requirements.txt` pins each package; the homelab pins the image tag.

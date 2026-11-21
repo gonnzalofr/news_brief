@@ -32,6 +32,15 @@ class Article:
     published: datetime  # aware, UTC
     sections: list[str] = field(default_factory=list)
 
+    def to_dict(self) -> dict:
+        """As `fetch` prints it and pending.json keeps it."""
+        return {"id": self.id, "headline": self.title, "standfirst": self.standfirst, "sections": list(self.sections),
+                "url": self.url, "published": self.published.isoformat(timespec="seconds")}
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Article":
+        return cls(d["id"], d["url"], d["headline"], d["standfirst"], datetime.fromisoformat(d["published"]), list(d["sections"]))
+
 
 def _clean(text: str | None) -> str:
     return " ".join(unescape(_TAG.sub(" ", text or "")).split())

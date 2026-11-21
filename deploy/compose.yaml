@@ -4,6 +4,11 @@
 # reached through a Tailscale Service (docs/network.md). The homelab only runs it: one port,
 # one volume, /healthz and /readyz.
 #
+# With BRIEF_MODE=external the service writes no brief itself: an agent on the machine does,
+# through the container (README, "Written by an agent"):
+#   docker exec news-brief python -m brief fetch > items.json
+#   docker exec -i news-brief python -m brief ingest --model claude < answer.json
+#
 # This file is the one for the homelab repository's services/news-brief/:
 #   cp .env.example .env && chmod 600 .env    # then fill it in
 #   docker compose up -d
@@ -21,6 +26,7 @@ services:
     environment:
       TZ: ${TZ:-Europe/Amsterdam}
       BRIEF_TIME: ${BRIEF_TIME:-07:00}
+      BRIEF_MODE: ${BRIEF_MODE:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
       ANTHROPIC_EFFORT: ${ANTHROPIC_EFFORT:-}

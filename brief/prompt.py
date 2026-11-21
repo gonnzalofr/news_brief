@@ -91,14 +91,34 @@ SCHEMA: dict = {
 }
 
 
-def user_message(candidates: list[Article], tz: ZoneInfo, start: datetime, end: datetime) -> str:
-    fmt = lambda d: d.astimezone(tz).strftime("%a %d %b %H:%M")  # noqa: E731
-    head = (
-        f"The brief covers {fmt(start)} to {fmt(end)} ({tz.key} time). "
-        f"{len(candidates)} FT items were published in that time:\n\n"
+# For an agent that writes the brief itself (`python -m brief fetch`, then `ingest`): what it
+# does with SYSTEM, the items and SCHEMA. The editorial rules stay in SYSTEM, for every writer.
+AGENT = """\
+Act as the editor described in `system`, for the items in `items` (the same id, sections, \
+time, headline and standfirst a model would be sent). Answer with one JSON object that \
+matches `schema` and nothing else: every key present, no other keys, each id used once and \
+only ids from `items`, at least one story, `weight` 2 to 5, one to three `topics`, at most \
+four `reads`. Pass it on stdin to `python -m brief ingest --model <your name>`. If ingest \
+lists problems, nothing was saved: fix them and run ingest again. If you cannot write the \
+brief, run `python -m brief ingest --fallback` to send the FT's own headlines instead.\
+"""
+
+
+def _fmt(d: datetime, tz: ZoneInfo) -> str:
+    return d.astimezone(tz).strftime("%a %d %b %H:%M")
+
+
+def window_note(count: int, tz: ZoneInfo, start: datetime, end: datetime) -> str:
+    return (
+        f"The brief covers {_fmt(start, tz)} to {_fmt(end, tz)} ({tz.key} time). "
+        f"{count} FT items were published in that time"
     )
+
+
+def user_message(candidates: list[Article], tz: ZoneInfo, start: datetime, end: datetime) -> str:
+    head = window_note(len(candidates), tz, start, end) + ":\n\n"
     rows = [
-        f"id: {a.id}\nsections: {', '.join(a.sections)}\ntime: {fmt(a.published)}\n"
+        f"id: {a.id}\nsections: {', '.join(a.sections)}\ntime: {_fmt(a.published, tz)}\n"
         f"headline: {a.title}\nstandfirst: {a.standfirst or '(none)'}"
         for a in candidates
     ]

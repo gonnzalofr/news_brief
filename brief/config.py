@@ -35,6 +35,9 @@ class Config:
     host: str
     port: int
     tweaks: bool
+    # "internal": `serve` writes the brief itself at BRIEF_TIME. "external": an agent does it
+    # with `fetch` and `ingest`, and `serve` only serves the pages.
+    mode: str = "internal"
     # The first brief, or one after a gap, covers at most this many hours.
     max_window_hours: int = 72
 
@@ -61,6 +64,9 @@ def load(env: dict[str, str] | None = None) -> Config:
     effort = get("ANTHROPIC_EFFORT", "medium")
     if effort not in {"low", "medium", "high", "xhigh", "max"}:
         raise ConfigError(f"ANTHROPIC_EFFORT must be low, medium, high, xhigh or max, got {effort!r}")
+    mode = get("BRIEF_MODE", "internal").lower()
+    if mode not in {"internal", "external"}:
+        raise ConfigError(f"BRIEF_MODE must be internal or external, got {mode!r}")
     try:
         port = int(get("PORT", "4960"))
     except ValueError as exc:
@@ -84,4 +90,5 @@ def load(env: dict[str, str] | None = None) -> Config:
         host=get("HOST", "0.0.0.0"),
         port=port,
         tweaks=get("BRIEF_TWEAKS") in {"1", "true", "yes"},
+        mode=mode,
     )

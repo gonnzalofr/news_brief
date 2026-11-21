@@ -39,6 +39,56 @@ Rough cost: one request a day, 20,000 to 60,000 tokens in and 5,000 to 15,000 ou
 included). With Claude Opus 5.5 at $4 and $20 per million that is about 20 to 50 cents a day,
 so $6 to $15 a month. `ANTHROPIC_EFFORT=low` spends less.
 
+## Written by an agent
+
+With `BRIEF_MODE=external`, `serve` keeps the pages, the archive, `/healthz` and `/readyz`, but
+writes no brief and calls no model API. An agent on the same machine writes it instead, through
+the container, in two steps:
+
+```
+docker exec news-brief python -m brief fetch > items.json
+#   ... the agent writes answer.json ...
+docker exec -i news-brief python -m brief ingest --model claude < answer.json
+```
+
+`fetch` reads the feeds over the same window as the daily run and prints one JSON object:
+`brief` (the date, the window's start and end, the time zone, whether it is a weekend, any feed
+that failed), `instructions` (`how`: what to do; `system` and `schema`: the editor's rules and
+the answer's JSON schema, exactly what a model API is sent, from `brief/prompt.py`), and
+`items` (id, headline, standfirst, sections, link and time of each FT item). It keeps the items
+in `/data/pending.json`, so the answer is checked against exactly what the agent saw.
+`--output <path>` writes the JSON to a file instead. If every feed fails it exits 1 and pushes
+that, as the daily run does, unless `--no-push`.
+
+`ingest` reads the answer on stdin (or `--input <path>`) and checks it against
+`pending.json`: every key the schema asks for and no others, only ids from the items, each id
+once, weights 2 to 5, one to three topics, at most four reads, at least one story. When it
+doesn't hold up, ingest saves nothing, keeps `pending.json`, prints every problem
+(`stories[2].weight must be one of 2, 3, 4, 5, not 7`) on stderr and as `{"ok": false,
+"errors": [...]}` on stdout, and exits 2; the agent fixes the answer and runs it again. When it
+does, the brief is saved, `pending.json` goes, the push is sent, and it prints a summary:
+date, number of stories, top headlines, whether the push went out. With no `pending.json` it
+exits 1.
+
+- `--model <label>`: who wrote it, for the footer (*Written by claude.*); "an external agent"
+  if not given.
+- `--date <YYYY-MM-DD>`: the day it is filed under; the day of the fetch if not given.
+- `--no-push`: no ntfy push.
+- `--fallback`: no answer is read; the FT's own headlines go out, as when no model can write
+  it. A window with no items always gives the empty brief this way.
+
+The answer may be wrapped in a Markdown code fence. `python -m brief run` still works with the
+model APIs when their keys are set.
+
+## Reading the latest brief
+
+`python -m brief latest --json` (in the container: `docker exec news-brief python -m brief
+latest --json`) and `GET /api/latest.json` give the latest brief as JSON: `date`, `issued`,
+`page` (its link, when `BRIEF_URL` is set), `writer`, `lead`, `top_headlines` (the first three),
+and every story with its summary, weight, topics, place, link and time, then `lines` and
+`reads`. Without `--json`, the date and top three headlines as text. Exit 1 or a 404 when there
+is no brief yet.
+
 ## Run it
 
 Python 3.13.
@@ -48,6 +98,9 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 cp .env.example .env              # fill in at least one API key; export it, or use your shell's dotenv
 .venv/bin/python -m brief run --no-push    # write today's brief now, into ./data
 .venv/bin/python -m brief serve            # the pages on :4960, and the brief daily at BRIEF_TIME
+.venv/bin/python -m brief fetch            # the items and instructions for an agent, as JSON
+.venv/bin/python -m brief ingest --model claude < answer.json   # check and publish its answer
+.venv/bin/python -m brief latest --json    # the latest brief, as JSON
 .venv/bin/python -m brief sample --tweaks  # render samples/sample-brief.json to sample.html, no network
 python3 -m unittest discover -s tests -t .
 ```
@@ -66,7 +119,7 @@ back into `brief/render.py`.
 `deploy/compose.yaml` is the service file for the homelab repository (`services/news-brief/`),
 with this repository's `.env.example` beside it. Port 4960 on the machine's loopback, a volume
 for `/data`, `/healthz` (the process is up) and `/readyz` (503 when the last good brief is more
-than 26 hours old). See `AGENTS.md` for how a version gets there.
+than 26 hours old, whether `serve` or `ingest` wrote it). See `AGENTS.md` for how a version gets there.
 
 ## Layout
 
@@ -76,12 +129,13 @@ brief/
   feeds.py      the FT feeds: fetch, parse, merge, window
   prompt.py     what the model is asked, and the JSON schema of its answer
   llm.py        Claude, Gemini, OpenAI, and the chain that tries them in order
-  model.py      the brief as data; checking a model's answer; topic links
+  model.py      the brief as data; checking a model's answer (leniently, or strictly for ingest); topic links
   render.py     the page and the archive, and the tweaks bar
   job.py        one morning: feeds, model, save, push
+  external.py   the same morning with an agent as the writer: fetch, then ingest
   scheduler.py  once a day at BRIEF_TIME, catching up after a late start
-  server.py     /, /<date>, /archive, /healthz, /readyz
-  store.py      one JSON file per brief, written whole
+  server.py     /, /<date>, /archive, /api/latest.json, /healthz, /readyz
+  store.py      one JSON file per brief, written whole; pending.json between fetch and ingest
   notify.py     the ntfy push
 tests/          unittest, no network
 samples/        one real brief, for design work and the tests

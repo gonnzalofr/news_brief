@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 
+from . import prompt
 from .feeds import Article
 
 
@@ -123,6 +124,117 @@ def from_model(data: dict, candidates: list[Article]) -> tuple[list[Story], list
         if isinstance(x, dict) and (a := take(x.get("id")))
     ][:4]
     return stories, lines, reads
+
+
+def _kind(v: object) -> str:
+    if v is None:
+        return "null"
+    if isinstance(v, bool):
+        return "true or false"
+    return {str: "a string", int: "a number", float: "a number", list: "a list", dict: "an object"}.get(type(v), type(v).__name__)
+
+
+def _fits(v: object, spec: dict) -> bool:
+    kind = spec.get("type")
+    if kind == "string":
+        return isinstance(v, str)
+    if kind == "integer":
+        return isinstance(v, int) and not isinstance(v, bool) and v in spec.get("enum", [v])
+    if kind == "array":
+        return isinstance(v, list) and all(_fits(x, spec["items"]) for x in v)
+    return True
+
+
+def _wanted(spec: dict) -> str:
+    if "enum" in spec:
+        return "one of " + ", ".join(map(str, spec["enum"]))
+    if spec.get("type") == "array":
+        return "a list of strings"
+    return "a string"
+
+
+def problems(data: object, candidates: list[Article]) -> list[str]:
+    """Every way an answer breaks prompt.SCHEMA or the rules in prompt.SYSTEM, one line each; [] when none.
+
+    Stricter than from_model, which quietly drops what doesn't hold up: this is for a writer
+    that can fix its answer and send it again (`python -m brief ingest`). An answer with no
+    problems loses nothing in from_model.
+    """
+    if not isinstance(data, dict):
+        return [f"the answer must be a JSON object, not {_kind(data)}"]
+    out: list[str] = []
+    ids = {a.id for a in candidates}
+    used: dict[str, str] = {}
+    sections = prompt.SCHEMA["properties"]
+    for key in sorted(data.keys() - sections.keys()):
+        out.append(f"unknown top-level key {key!r}: the answer has only stories, lines and reads")
+    for key, section in sections.items():
+        if key not in data:
+            out.append(f"{key!r} is missing: use [] when there are none")
+            continue
+        items = data[key]
+        if not isinstance(items, list):
+            out.append(f"{key} must be a list, not {_kind(items)}")
+            continue
+        spec = section["items"]
+        for i, item in enumerate(items):
+            at = f"{key}[{i}]"
+            if not isinstance(item, dict):
+                out.append(f"{at} must be an object, not {_kind(item)}")
+                continue
+            out += [f"{at} has no {k!r}" for k in spec["required"] if k not in item]
+            out += [f"{at} has an unknown key {k!r}" for k in sorted(item.keys() - spec["properties"].keys())]
+            for k, prop in spec["properties"].items():
+                if k in item and not _fits(item[k], prop):
+                    got = item[k] if isinstance(item[k], int) and not isinstance(item[k], bool) else _kind(item[k])
+                    out.append(f"{at}.{k} must be {_wanted(prop)}, not {got}")
+            for k in ("headline", "summary", "text", "note"):
+                if isinstance(item.get(k), str) and not item[k].strip():
+                    out.append(f"{at}.{k} is empty")
+            topics = item.get("topics")
+            if key == "stories" and isinstance(topics, list):
+                if not 1 <= len(topics) <= 3:
+                    out.append(f"{at}.topics must hold one to three topics, not {len(topics)}")
+                if any(isinstance(t, str) and not t.strip() for t in topics):
+                    out.append(f"{at}.topics has an empty topic")
+            refs = [("id", item.get("id"))]
+            if isinstance(item.get("also"), list):
+                refs += [(f"also[{j}]", x) for j, x in enumerate(item["also"])]
+            for where, ref in refs:
+                if not isinstance(ref, str):
+                    continue  # the wrong type is already reported
+                if ref not in ids:
+                    out.append(f"{at}.{where} {ref!r} is not the id of any item")
+                elif ref in used:
+                    out.append(f"{at}.{where} {ref!r} is already used at {used[ref]}; each id goes in one place only")
+                else:
+                    used[ref] = f"{at}.{where}"
+    if data.get("stories") == []:
+        out.append("stories is empty: a brief needs at least one story")
+    if isinstance(data.get("reads"), list) and len(data["reads"]) > 4:
+        out.append(f"reads holds {len(data['reads'])} items; at most four")
+    return out
+
+
+def digest(b: Brief, base_url: str = "") -> dict:
+    """The brief as another reader wants it: `python -m brief latest --json`, /api/latest.json."""
+    story = lambda s: {"headline": s.headline, "summary": s.summary, "weight": s.weight, "topics": s.topics,  # noqa: E731
+                       "place": s.place, "url": s.url, "published": s.published}
+    return {
+        "date": b.date,
+        "issued": b.issued,
+        "page": f"{base_url}/{b.date}" if base_url else "",
+        "writer": b.writer,
+        "by_model": bool(b.writer),
+        "window_start": b.window_start,
+        "window_end": b.window_end,
+        "candidates": b.candidates,
+        "lead": story(b.stories[0]) if b.stories else None,
+        "top_headlines": [s.headline for s in b.stories[:3]],
+        "stories": [story(s) for s in b.stories],
+        "lines": [{"text": x.text, "url": x.url, "published": x.published} for x in b.lines],
+        "reads": [{"headline": r.headline, "note": r.note, "url": r.url, "published": r.published} for r in b.reads],
+    }
 
 
 def without_model(candidates: list[Article]) -> list[Story]:

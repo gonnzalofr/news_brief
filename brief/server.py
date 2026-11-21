@@ -1,4 +1,4 @@
-"""The pages: / (latest), /<YYYY-MM-DD>, /archive, and /healthz and /readyz for the homelab."""
+"""The pages: / (latest), /<YYYY-MM-DD>, /archive; /api/latest.json; /healthz and /readyz for the homelab."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import render
 from .config import Config
+from .model import digest
 from .store import Store
 
 log = logging.getLogger(__name__)
@@ -77,6 +78,12 @@ def make_handler(cfg: Config, store: Store) -> type[BaseHTTPRequestHandler]:
                     self._brief(dates[-1])
                 else:
                     self._send(HTTPStatus.OK, render.archive_page([], cfg.tweaks))
+            elif path == "/api/latest.json":
+                latest = store.latest()
+                if latest is None:
+                    self._send(HTTPStatus.NOT_FOUND, json.dumps({"error": "no brief yet"}), "application/json")
+                else:
+                    self._send(HTTPStatus.OK, json.dumps(digest(latest, cfg.brief_url), ensure_ascii=False), "application/json")
             elif path == "/archive":
                 self._send(HTTPStatus.OK, render.archive_page(self._entries(), cfg.tweaks))
             else:
