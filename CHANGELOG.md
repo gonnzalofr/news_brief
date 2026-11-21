@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (21 Nov 2026)
+
+An agent can write the brief instead of the model APIs.
 
 - `BRIEF_MODE=external`: `serve` serves the pages but writes no brief, for an agent on the
   machine that writes it instead of the model APIs.
