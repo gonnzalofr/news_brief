@@ -277,6 +277,11 @@ def _page(title: str, body: str, tweaks: bool) -> str:
         '<!doctype html>\n<html lang="en-GB">\n<head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
         f"<title>{e(title)}</title>\n"
+        '<link rel="icon" href="/favicon.svg" type="image/svg+xml">\n<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">\n'
+        '<link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">\n<link rel="apple-touch-icon" href="/apple-touch-icon.png">\n'
+        '<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">\n'
+        '<meta name="theme-color" content="#121516" media="(prefers-color-scheme: dark)">\n'
+        '<meta name="apple-mobile-web-app-title" content="Brief">\n'
         '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
         f"{fonts}\n<style>{CSS}</style>\n</head>\n<body>\n{body}\n{TWEAKS if tweaks else ''}\n</body>\n</html>\n"
     )

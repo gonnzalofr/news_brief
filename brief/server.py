@@ -7,6 +7,7 @@ import logging
 from datetime import datetime, timedelta
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 from . import render
 from .config import Config
@@ -20,6 +21,17 @@ CSP = (
     "script-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 )
 
+# The icon (tools/icons.py draws it): path -> file in brief/static, and its type.
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+STATIC = {
+    "/favicon.svg": ("favicon.svg", "image/svg+xml"),
+    "/favicon.ico": ("favicon.ico", "image/x-icon"),
+    "/favicon-32.png": ("favicon-32.png", "image/png"),
+    "/icon-192.png": ("icon-192.png", "image/png"),
+    "/apple-touch-icon.png": ("apple-touch-icon.png", "image/png"),
+    "/apple-touch-icon-precomposed.png": ("apple-touch-icon.png", "image/png"),
+}
+
 
 def make_handler(cfg: Config, store: Store) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
@@ -29,12 +41,12 @@ def make_handler(cfg: Config, store: Store) -> type[BaseHTTPRequestHandler]:
         def log_message(self, fmt: str, *args: object) -> None:
             log.debug("%s %s", self.address_string(), fmt % args)
 
-        def _send(self, status: int, body: str, ctype: str = "text/html; charset=utf-8") -> None:
-            data = body.encode("utf-8")
+        def _send(self, status: int, body: str | bytes, ctype: str = "text/html; charset=utf-8", cache: str = "no-cache") -> None:
+            data = body.encode("utf-8") if isinstance(body, str) else body
             self.send_response(status)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(data)))
-            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Cache-Control", cache)
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "no-referrer")
             if ctype.startswith("text/html"):
@@ -64,7 +76,10 @@ def make_handler(cfg: Config, store: Store) -> type[BaseHTTPRequestHandler]:
 
         def do_GET(self) -> None:  # noqa: N802
             path = self.path.split("?", 1)[0].rstrip("/") or "/"
-            if path == "/healthz":
+            if path in STATIC:
+                name, ctype = STATIC[path]
+                self._send(HTTPStatus.OK, (STATIC_DIR / name).read_bytes(), ctype, "public, max-age=86400")
+            elif path == "/healthz":
                 self._send(HTTPStatus.OK, json.dumps({"ok": True} | store.state()), "application/json")
             elif path == "/readyz":
                 # Not ready when the last good brief is more than a day and a bit old.

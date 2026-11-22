@@ -151,6 +151,10 @@ index. Light and dark follow the phone. `BRIEF_TWEAKS=1` adds a bar for trying f
 scale, headline weight, accent hue, density and motion live; *Show values* gives the CSS to put
 back into `brief/render.py`.
 
+The icon is a sun rising over a line of text, on the page's teal: `brief/static/favicon.svg`
+(lighter teal in dark mode), with PNG fallbacks, `favicon.ico` and a 180px `apple-touch-icon`
+for the phone's home screen. `python3 tools/icons.py` draws them all from the same shapes.
+
 ## On the homelab
 
 `deploy/compose.yaml` is the service file for the homelab repository (`services/news-brief/`),
@@ -175,6 +179,8 @@ brief/
   server.py     /, /<date>, /archive, /api/latest.json, /healthz, /readyz
   store.py      one JSON file per brief, written whole; pending.json between fetch and ingest
   notify.py     the ntfy push
+  static/       the icon, as SVG, PNG and ICO
+tools/icons.py  draws the icon
 tests/          unittest, no network
 samples/        one real brief, for design work and the tests
 deploy/         the homelab's compose file

@@ -304,6 +304,13 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(self.get("/healthz")[0], 200)
         self.assertEqual(self.get("/")[0], 200)
 
+    def test_the_icon_is_served(self):
+        for path, ctype, start in (("/favicon.svg", "image/svg+xml", b"<svg"), ("/favicon.ico", "image/x-icon", b"\x00\x00\x01\x00"),
+                                   ("/favicon-32.png", "image/png", b"\x89PNG"), ("/apple-touch-icon.png", "image/png", b"\x89PNG"),
+                                   ("/icon-192.png", "image/png", b"\x89PNG")):
+            status, got, body = self.get(path)
+            self.assertEqual((status, got, body[:len(start)]), (200, ctype, start), path)
+
 
 if __name__ == "__main__":
     unittest.main()

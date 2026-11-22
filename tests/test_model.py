@@ -132,6 +132,8 @@ class SourcesTest(unittest.TestCase):
         twice.also.append(twice.also[0])
         self.assertIn(f'Guardian (<a href="{MIXED[3].url}" target="_blank" rel="noopener">1</a>, '
                       f'<a href="{MIXED[3].url}" target="_blank" rel="noopener">2</a>), ', render._also(twice))
+        self.assertIn('<link rel="icon" href="/favicon.svg" type="image/svg+xml">', page)
+        self.assertIn('<link rel="apple-touch-icon" href="/apple-touch-icon.png">', page)
         d = digest(b)
         self.assertEqual((d["lead"]["source"], d["lead"]["label"]), ("BBC", "BBC"))
         self.assertEqual(d["lead"]["also"], [{"url": MIXED[0].url, "source": "FT", "access": "paywalled", "label": "FT · paywalled"}])

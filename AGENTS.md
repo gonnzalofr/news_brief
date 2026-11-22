@@ -34,6 +34,7 @@ reach here are repeated below.
 - **Exact versions**: `requirements.txt` pins each package; the homelab pins the image tag.
 - **Design**: the page's values are custom properties at the top of `render.CSS`; change them
   there, not in component rules. The tweaks bar must keep working (`BRIEF_TWEAKS=1`).
+  The icon's shapes and colours are in `tools/icons.py`; run it and commit `brief/static/`.
 - **Words**: plain and calm, British English, dates as "22 Nov".
 
 ## Before you push
