@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1 (22 Nov 2026)
+
+- A switch at the top right of every page: Auto (follow the device), Light or Dark. The choice is
+  remembered in the browser and applied before the page is drawn.
+
 ## 0.4.0 (22 Nov 2026)
 
 More opinion and analysis, all free to read.
