@@ -1,5 +1,5 @@
-# The FT morning brief (github.com/gonnzalofr/news_brief, image ghcr.io/gonnzalofr/news-brief).
-# Every morning at BRIEF_TIME it reads the FT's public feeds, has Claude (or Gemini, or OpenAI)
+# The morning brief (github.com/gonnzalofr/news_brief, image ghcr.io/gonnzalofr/news-brief).
+# Every morning at BRIEF_TIME it reads the FT's and other outlets' public feeds, has Claude (or Gemini, or OpenAI)
 # write the brief, keeps it, and pushes the top three headlines through ntfy. Its page is
 # reached through a Tailscale Service (docs/network.md). The homelab only runs it: one port,
 # one volume, /healthz and /readyz.
@@ -16,7 +16,7 @@ name: news-brief
 
 services:
   news-brief:
-    image: ghcr.io/gonnzalofr/news-brief:0.2.0
+    image: ghcr.io/gonnzalofr/news-brief:0.3.0
     container_name: news-brief
     restart: unless-stopped
     # A ceiling, so a leak here can't take the machine's memory from the others.
@@ -37,7 +37,7 @@ services:
       NTFY_URL: ${NTFY_URL:-}
       NTFY_TOKEN: ${NTFY_TOKEN:-}
       BRIEF_URL: ${BRIEF_URL:-}
-      FEEDS: ${FEEDS:-}
+      SOURCES_FILE: ${SOURCES_FILE:-}
       BRIEF_TWEAKS: ${BRIEF_TWEAKS:-}
     ports:
       # The machine's own loopback only: the way Tailscale Services reaches it.
