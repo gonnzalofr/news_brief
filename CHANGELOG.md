@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0 (22 Nov 2026)
+
+More opinion and analysis, all free to read.
+
+- New outlets: The Conversation, VoxEU, ProPublica and Rest of World; the Guardian adds its
+  opinion section and the long read. (NYT Opinion and Semafor are in `sources.toml`, commented out.)
+- "For later" holds up to six reads (was four); `ingest` accepts six.
+
 ## 0.3.0 (22 Nov 2026)
 
 More outlets than the FT, each item labelled with where it is from, FT Edit for the FT, and an icon.
