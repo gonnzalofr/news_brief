@@ -35,6 +35,8 @@ CSS = """
   /* The outlet beside each headline: free to read, opened by the reader's subscription (FT Edit), paywalled. */
   --src-size: calc(11px * var(--scale)); --src-track: 0.12em; --src-ink: var(--ink-2); --src-line: var(--line);
   --src-open: var(--accent); --src-shut: var(--muted);
+  /* The Auto / Light / Dark switch, top right of every page. */
+  --theme-size: 11px; --theme-track: 0.14em; --theme-ink: var(--muted); --theme-on: var(--ink); --theme-line: var(--line);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -120,6 +122,15 @@ h2 a:hover, h3 a:hover { text-decoration: underline; text-underline-offset: 3px;
 .foot nav { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; font-style: normal; }
 .foot nav a { color: var(--accent); text-decoration: none; }
 .foot nav a:hover { text-decoration: underline; }
+
+.theme { position: absolute; top: 14px; right: max(16px, env(safe-area-inset-right, 0px)); display: flex; border: 1px solid var(--theme-line); border-radius: 2px; }
+.theme[hidden] { display: none; }
+.theme button { font: 500 var(--theme-size)/1 var(--font-body); letter-spacing: var(--theme-track); text-transform: uppercase; color: var(--theme-ink);
+  background: none; border: 0; padding: 7px 9px 6px; min-height: 28px; cursor: pointer; }
+.theme button + button { border-left: 1px solid var(--theme-line); }
+.theme button[aria-pressed="true"] { color: var(--theme-on); background: var(--theme-line); }
+.theme button:hover { color: var(--theme-on); }
+.theme button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 .archive ol { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ink); }
 .archive li a { display: grid; grid-template-columns: 9em minmax(0, 1fr); gap: 4px 16px; padding-block: 14px; border-bottom: 1px solid var(--line); text-decoration: none; }
@@ -271,6 +282,40 @@ def _minutes(b: Brief) -> int:
     return max(1, round(words / 230))
 
 
+# Light or dark by choice, remembered in this browser; "auto" (nothing stored) follows the device.
+# THEME_EARLY runs in <head>, so a chosen theme is there before the first paint.
+THEME_KEY = "brief-theme"
+THEME_EARLY = (
+    '<script>try{var t=localStorage.getItem("%s");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>'
+    % THEME_KEY
+)
+THEME_SWITCH = """
+<div class="theme" role="group" aria-label="Colour theme" hidden>
+<button type="button" data-theme-choice="auto" title="Follow the device">Auto</button><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="dark">Dark</button>
+</div>
+<script>
+(() => {
+  const root = document.documentElement, KEY = "%s", COLOR = {light: "#ffffff", dark: "#121516"};
+  const box = document.querySelector(".theme"), metas = document.querySelectorAll('meta[name="theme-color"]');
+  const show = () => {
+    const now = root.dataset.theme || "auto";
+    for (const b of box.querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.themeChoice === now));
+    for (const m of metas) m.content = COLOR[root.dataset.theme] || COLOR[m.media.includes("dark") ? "dark" : "light"];
+  };
+  box.addEventListener("click", ev => {
+    const choice = ev.target.closest("button")?.dataset.themeChoice;
+    if (!choice) return;
+    if (choice === "auto") delete root.dataset.theme; else root.dataset.theme = choice;
+    try { choice === "auto" ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, choice); } catch (e) {}
+    show();
+  });
+  box.hidden = false;
+  show();
+})();
+</script>
+""" % THEME_KEY
+
+
 def _page(title: str, body: str, tweaks: bool) -> str:
     fonts = f'<link rel="stylesheet" href="{FONTS_URL}">' + (f'<link rel="stylesheet" href="{TWEAK_FONTS_URL}">' if tweaks else "")
     return (
@@ -281,9 +326,10 @@ def _page(title: str, body: str, tweaks: bool) -> str:
         '<link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">\n<link rel="apple-touch-icon" href="/apple-touch-icon.png">\n'
         '<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">\n'
         '<meta name="theme-color" content="#121516" media="(prefers-color-scheme: dark)">\n'
+        f"{THEME_EARLY}\n"
         '<meta name="apple-mobile-web-app-title" content="Brief">\n'
         '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
-        f"{fonts}\n<style>{CSS}</style>\n</head>\n<body>\n{body}\n{TWEAKS if tweaks else ''}\n</body>\n</html>\n"
+        f"{fonts}\n<style>{CSS}</style>\n</head>\n<body>\n{THEME_SWITCH}{body}\n{TWEAKS if tweaks else ''}\n</body>\n</html>\n"
     )
 
 

@@ -153,7 +153,8 @@ python3 -m unittest discover -s tests -t .
 ## The page
 
 Editorial: EB Garamond throughout, a letterspaced nameplate, the lead set large, then a hairline
-index. Light and dark follow the phone. `BRIEF_TWEAKS=1` adds a bar for trying fonts, type
+index. Light and dark follow the phone, or are chosen with the *Auto · Light · Dark* switch at the top
+right of every page, remembered in that browser (`localStorage`, key `brief-theme`). `BRIEF_TWEAKS=1` adds a bar for trying fonts, type
 scale, headline weight, accent hue, density and motion live; *Show values* gives the CSS to put
 back into `brief/render.py`.
 

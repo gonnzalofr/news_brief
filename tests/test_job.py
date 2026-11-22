@@ -88,6 +88,17 @@ class JobTest(unittest.TestCase):
         self.assertNotIn('class="tw"', page)
         self.assertIn('class="tw"', render.brief_page(b, TZ, tweaks=True))
 
+    def test_every_page_has_the_theme_switch_and_applies_a_choice_before_paint(self):
+        b = self.run_job([Fake("Claude", ANSWER)])
+        for page in (render.brief_page(b, TZ), render.archive_page([])):
+            head, body = page.split("<body>")
+            self.assertIn('localStorage.getItem("brief-theme")', head)  # before the stylesheet's first paint matters
+            self.assertIn('<div class="theme" role="group" aria-label="Colour theme" hidden>', body)  # shown by its script
+            for choice in ("auto", "light", "dark"):
+                self.assertIn(f'data-theme-choice="{choice}"', body)
+        self.assertIn(':root[data-theme="dark"]', render.CSS)
+        self.assertIn(':root:not([data-theme="light"])', render.CSS)
+
 
 class SchedulerTest(unittest.TestCase):
     def test_next_run_is_today_before_the_time_and_tomorrow_after(self):
