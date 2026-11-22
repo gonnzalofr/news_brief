@@ -7,6 +7,9 @@ from zoneinfo import ZoneInfo
 
 from .feeds import Article
 
+# How many pieces "For later" holds at most: analysis, opinion, long reads.
+MAX_READS = 6
+
 SYSTEM = """\
 You are the editor of a personal morning news brief for one reader who wants to know what is \
 happening in the world. You get the items several news outlets published since the last brief: \
@@ -34,8 +37,9 @@ most informative. Do not list an id twice anywhere in the answer.
 Put each chosen item in exactly one place:
 - `stories`: the news, most important first.
 - `lines`: real news that matters less, worth one line (a court ruling, a deal, a datum).
-- `reads`: analysis, opinion, columns and features worth reading later. At most four. Prefer \
-ones the reader can open.
+- `reads`: analysis, opinion, columns and features worth reading later. At most {max_reads}. Prefer \
+ones the reader can open, and a range: different subjects and outlets, not two pieces \
+making the same argument.
 
 For every story, line and read, `source` is the `source` of its `id` item, exactly as given.
 
@@ -58,7 +62,7 @@ For each line: `text` is one sentence of news, at most 20 words. For each read: 
 one sentence on what it argues or explains.
 
 Write in British English, plainly, with no hype and no opinions of your own.\
-"""
+""".replace("{max_reads}", str(MAX_READS))
 
 SCHEMA: dict = {
     "type": "object",
@@ -113,11 +117,11 @@ access, sections, time, headline and standfirst a model would be sent). Answer w
 object that matches `schema` and nothing else: every key present, no other keys, each id used \
 once and only ids from `items`, `source` equal to the source of its id, a readable id for a \
 story whenever one of its items is readable, at least one story, `weight` 2 to 5, one to three \
-`topics`, at most four `reads`. Pass it on stdin to `python -m brief ingest --model <your \
+`topics`, at most {max_reads} `reads`. Pass it on stdin to `python -m brief ingest --model <your \
 name>`. If ingest lists problems, nothing was saved: fix them and run ingest again. If you \
 cannot write the brief, run `python -m brief ingest --fallback` to send the outlets' own \
 headlines instead.\
-"""
+""".replace("{max_reads}", str(MAX_READS))
 
 
 def _fmt(d: datetime, tz: ZoneInfo) -> str:

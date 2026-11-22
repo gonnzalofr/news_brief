@@ -12,7 +12,8 @@ ntfy. It runs as one Docker image on the homelab, reached over Tailscale.
   matter), its **topics** in small capitals, **links to the other stories** in the same brief
   that share a topic, its place, and the time it was published.
 - **Also**: smaller news, one line each.
-- **For later** (for the weekend on Saturdays and Sundays): analysis and opinion worth reading.
+- **For later** (for the weekend on Saturdays and Sundays): up to six pieces of analysis, opinion
+  and long reads worth reading, from across the outlets.
 - **Where each item is from**, beside its headline: the outlet (`BBC`, `Guardian`), `FT Edit`
   for an FT piece the reader's FT Edit licence opens, or `FT · paywalled` for one it doesn't.
 - When several outlets report the same event it is one story: the headline links to a version
@@ -32,16 +33,21 @@ anywhere or reads the full articles: no keys, no cookies, no scraping.
 | --- | --- | --- |
 | FT | world, the regions, the economy, companies, markets, technology, climate, opinion; FT Edit | The reader's paper; paywalled except FT Edit |
 | BBC | world, business, technology | Broadest free general news in English, careful with facts |
-| Guardian | world, Europe, business, economics, AI | No paywall; deep world and Europe desks, a dedicated AI section |
+| Guardian | world, Europe, business, economics, AI, opinion, the long read | No paywall; deep world and Europe desks, a dedicated AI section, its columnists |
 | DW | top stories, Europe, business | The EU and Central and Eastern Europe from Berlin |
 | Politico Europe | all | The EU institutions from the inside |
 | Al Jazeera | all | The Middle East, Africa and South Asia, with reporters on the ground |
 | CNBC | top news, economy, finance | Markets and the US economy as they move |
 | Ars Technica | all | Technology and science by specialists, sober about AI |
 | TechCrunch | AI | The AI industry day to day |
+| The Conversation | global | Academics explaining the news in their field; free to read and republish |
+| VoxEU | columns | Economists' columns on research and policy (CEPR) |
+| ProPublica | all | Non-profit investigative journalism, long-form, mostly the US |
+| Rest of World | latest | Technology outside the West |
 
-Reuters and AP have no public feeds any more; France 24, Euronews and NPR were checked and are
-in the file, commented out. No outlet gets a quota: the model ranks every item on its news value.
+Reuters and AP have no public feeds any more; France 24, Euronews, Semafor and NPR were checked
+and are in the file, commented out. The BBC publishes no opinion, and the New York Times, the
+Economist and Le Monde have paywalls (NYT Opinion is in the file, commented out, as paywalled). No outlet gets a quota: the model ranks every item on its news value.
 
 **The FT and FT Edit.** The reader's FT licence is FT Edit: the eight pieces a day the FT's
 editors pick open in full, and any other FT article asks to subscribe. The FT publishes that
@@ -97,7 +103,7 @@ that, as the daily run does, unless `--no-push`.
 `ingest` reads the answer on stdin (or `--input <path>`) and checks it against
 `pending.json`: every key the schema asks for and no others, only ids from the items, each id
 once, a `source` on every story, line and read equal to its id's source, a readable id for a
-story whenever one of its items is readable, weights 2 to 5, one to three topics, at most four
+story whenever one of its items is readable, weights 2 to 5, one to three topics, at most six
 reads, at least one story. When it
 doesn't hold up, ingest saves nothing, keeps `pending.json`, prints every problem
 (`stories[2].weight must be one of 2, 3, 4, 5, not 7`) on stderr and as `{"ok": false,

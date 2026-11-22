@@ -166,12 +166,12 @@ class ProblemsTest(unittest.TestCase):
 
     def test_topics_also_and_reads(self):
         story = {**ANSWER["stories"][0], "topics": [], "also": [IDS[0]], "headline": " "}
-        reads = [{"id": i, "note": "n"} for i in IDS[1:]] + [{"id": "x", "note": "n"}] * 3
+        reads = [{"id": i, "note": "n"} for i in IDS[1:]] + [{"id": "x", "note": "n"}] * 5
         found = problems({"stories": [story], "lines": [], "reads": reads}, ARTICLES)
         self.assertIn("stories[0].topics must hold one to three topics, not 0", found)
         self.assertIn("stories[0].headline is empty", found)
         self.assertTrue(any(p.startswith("stories[0].also[0]") and "already used" in p for p in found))
-        self.assertIn("reads holds 5 items; at most four", found)
+        self.assertIn("reads holds 7 items; at most 6", found)
 
 
 class CliTest(unittest.TestCase):

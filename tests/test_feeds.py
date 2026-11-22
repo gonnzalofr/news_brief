@@ -98,6 +98,10 @@ class SourcesTest(unittest.TestCase):
         self.assertEqual((ft.access, ft.unlocked, ft.unlocked_label), ("paywalled", "https://www.ft.com/ft-edit?format=rss", "FT Edit"))
         self.assertGreaterEqual(len(sources), 5)
         self.assertTrue(all(s.access == "free" for s in sources if s.name != "FT"))
+        names = {s.name for s in sources}
+        self.assertLessEqual({"The Conversation", "VoxEU", "ProPublica", "Rest of World"}, names)  # analysis and opinion
+        guardian = dict(next(s for s in sources if s.name == "Guardian").feeds)
+        self.assertIn("opinion", guardian)
         self.assertTrue(all(url.startswith("https://") for s in sources for _, url in s.feeds))
 
     def test_sources_file_is_checked(self):

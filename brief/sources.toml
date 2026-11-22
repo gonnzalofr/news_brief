@@ -49,7 +49,7 @@ business = "https://feeds.bbci.co.uk/news/business/rss.xml"
 technology = "https://feeds.bbci.co.uk/news/technology/rss.xml"
 
 # No paywall at all (it asks for donations). Deep world and Europe desks, good on the
-# economy, and a dedicated AI section.
+# economy, a dedicated AI section, its opinion columns and the weekly long reads.
 [[source]]
 name = "Guardian"
 access = "free"
@@ -60,6 +60,8 @@ europe = "https://www.theguardian.com/world/europe-news/rss"
 business = "https://www.theguardian.com/business/rss"
 economics = "https://www.theguardian.com/business/economics/rss"
 ai = "https://www.theguardian.com/technology/artificialintelligenceai/rss"
+opinion = "https://www.theguardian.com/commentisfree/rss"
+long-read = "https://www.theguardian.com/news/series/the-long-read/rss"
 
 # Germany's public international broadcaster: Europe and the EU seen from Berlin, and
 # Central and Eastern Europe, which the British outlets cover less.
@@ -116,7 +118,44 @@ access = "free"
 [source.feeds]
 ai = "https://techcrunch.com/category/artificial-intelligence/feed/"
 
-# More free outlets that were checked and work, left out to keep the brief's input small.
+# Analysis and opinion, all free. The BBC publishes no opinion; its analysis pieces come
+# through its feeds above, as do Al Jazeera's opinion pieces.
+
+# Academics writing on their own field, edited by journalists, free to read and republish.
+# Good on the "why" behind the news: elections, the economy, science, AI.
+[[source]]
+name = "The Conversation"
+access = "free"
+
+[source.feeds]
+global = "https://theconversation.com/global/articles.atom"
+
+# Economists' short columns on research and policy (CEPR's VoxEU): the economy and markets
+# explained by the people who study them.
+[[source]]
+name = "VoxEU"
+access = "free"
+
+[source.feeds]
+columns = "https://cepr.org/rss/vox-content"
+
+# Non-profit investigative journalism, free and long-form; mostly the US.
+[[source]]
+name = "ProPublica"
+access = "free"
+
+[source.feeds]
+all = "https://feeds.propublica.org/propublica/main"
+
+# Technology outside the West: how AI and platforms play out in Asia, Africa, Latin America.
+[[source]]
+name = "Rest of World"
+access = "free"
+
+[source.feeds]
+latest = "https://restofworld.org/feed/latest"
+
+# More outlets that were checked and work, left out to keep the brief's input small.
 # Remove the # to add one.
 #
 # [[source]]
@@ -130,6 +169,19 @@ ai = "https://techcrunch.com/category/artificial-intelligence/feed/"
 # access = "free"
 # [source.feeds]
 # all = "https://www.euronews.com/rss"
+#
+# [[source]]
+# name = "Semafor"
+# access = "free"
+# [source.feeds]
+# all = "https://www.semafor.com/rss.xml"
+#
+# Paywalled, like the FT without FT Edit: every item would show "NYT · paywalled".
+# [[source]]
+# name = "NYT"
+# access = "paywalled"
+# [source.feeds]
+# opinion = "https://rss.nytimes.com/services/xml/rss/nyt/Opinion.xml"
 #
 # [[source]]
 # name = "NPR"

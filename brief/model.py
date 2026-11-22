@@ -186,7 +186,7 @@ def from_model(data: dict, candidates: list[Article]) -> tuple[list[Story], list
         Read(a.id, a.url, a.title, text(x.get("note")), iso(a.published), **_origin(a))
         for x in data.get("reads") or []
         if isinstance(x, dict) and (a := take(x.get("id")))
-    ][:4]
+    ][:prompt.MAX_READS]
     return stories, lines, reads
 
 
@@ -286,8 +286,8 @@ def problems(data: object, candidates: list[Article]) -> list[str]:
                     used[ref] = f"{at}.{where}"
     if data.get("stories") == []:
         out.append("stories is empty: a brief needs at least one story")
-    if isinstance(data.get("reads"), list) and len(data["reads"]) > 4:
-        out.append(f"reads holds {len(data['reads'])} items; at most four")
+    if isinstance(data.get("reads"), list) and len(data["reads"]) > prompt.MAX_READS:
+        out.append(f"reads holds {len(data['reads'])} items; at most {prompt.MAX_READS}")
     return out
 
 
