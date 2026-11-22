@@ -22,7 +22,7 @@ from .store import Store
 
 log = logging.getLogger(__name__)
 
-PENDING_VERSION = 1
+PENDING_VERSION = 2  # 2: items carry source and access (0.3.0)
 DEFAULT_WRITER = "an external agent"
 _FENCE = re.compile(r"^```[a-zA-Z]*\s*\n(.*)\n```$", re.DOTALL)
 
@@ -48,7 +48,7 @@ def fetch(
     Raises job.NoFeeds (pushed, unless push is False) when every feed failed.
     """
     now = (now or datetime.now(cfg.tz)).astimezone(cfg.tz)
-    start, end, candidates, feed_errors = job.collect(cfg, store, now, push, fetch or feeds.fetch, send or notify.send)
+    start, end, candidates, feed_errors, unlocked = job.collect(cfg, store, now, push, fetch or feeds.fetch, send or notify.send)
     day = now.date()
     brief = {
         "date": day.isoformat(),
@@ -59,19 +59,20 @@ def fetch(
         "weekend": day.weekday() >= 5,
         "candidates": len(candidates),
         "feed_errors": feed_errors,
+        "unlocked": unlocked,  # every id the reader's subscription opens now (FT Edit), recorded when the brief goes out
     }
     items = [a.to_dict() for a in candidates]
     store.save_pending({"version": PENDING_VERSION, "brief": brief, "items": items})
     log.info("%d items for %s kept in %s", len(items), brief["date"], store.pending_path)
     how = prompt.AGENT if candidates else (
-        "The FT published nothing in this window. Run `python -m brief ingest --fallback` to send "
+        "No outlet published anything in this window. Run `python -m brief ingest --fallback` to send "
         "the brief that says so."
     )
     return {
         "brief": brief,
         "instructions": {
             "how": how,
-            "context": prompt.window_note(len(candidates), cfg.tz, start, end) + ".",
+            "context": prompt.window_note(candidates, cfg.tz, start, end) + ".",
             "system": prompt.SYSTEM,
             "schema": prompt.SCHEMA,
         },
@@ -110,7 +111,7 @@ def ingest(
 
     The brief and whether the push went out. Raises NoPending, or Invalid with every problem
     found, in which case nothing is saved and pending.json stays for the next try. With
-    `fallback`, or when the window held no items, `text` is not read: the FT's own headlines go out.
+    `fallback`, or when the window held no items, `text` is not read: the outlets' own headlines go out.
     """
     meta, candidates = load_pending(store)
     now = (now or datetime.now(cfg.tz)).astimezone(cfg.tz)
@@ -140,7 +141,7 @@ def ingest(
         writer=writer,
         failures=failures,
     )
-    pushed = job.publish(cfg, store, brief, push, send or notify.send)
+    pushed = job.publish(cfg, store, brief, push, send or notify.send, meta.get("unlocked"))
     store.clear_pending()
     log.info("%s: %d stories by %s", brief.date, len(brief.stories), brief.writer or "no model")
     return brief, pushed

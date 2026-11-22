@@ -14,9 +14,9 @@ NOW = datetime(2026, 11, 22, 7, 0, tzinfo=TZ)
 ARTICLES = [art(1, "Talks stall", 18), art(2, "Oil falls", 8), art(3, "Old news", 1, day=19)]
 ANSWER = {
     "stories": [
-        {"id": ARTICLES[0].id, "also": [], "headline": "Talks <b>stall</b>", "summary": "The talks stalled.", "weight": 5,
+        {"id": ARTICLES[0].id, "source": "FT", "also": [], "headline": "Talks <b>stall</b>", "summary": "The talks stalled.", "weight": 5,
          "topics": ["Energy"], "place": "Antalya"},
-        {"id": ARTICLES[1].id, "also": [], "headline": "Oil falls", "summary": "Oil fell.", "weight": 4,
+        {"id": ARTICLES[1].id, "source": "FT", "also": [], "headline": "Oil falls", "summary": "Oil fell.", "weight": 4,
          "topics": ["Energy", "Oil"], "place": ""},
     ],
     "lines": [], "reads": [],
@@ -57,6 +57,16 @@ class JobTest(unittest.TestCase):
         self.assertEqual([s.headline for s in b.stories], ["Talks stall", "Oil falls"])
         self.assertIn("No model could write it", self.pushes[0][1])
         self.assertEqual(self.pushes[0][2]["priority"], 4)
+
+    def test_new_ft_edit_picks_join_the_brief_once_even_when_published_before_the_window(self):
+        pick = art(4, "An FT Edit pick", 5, day=20, access="unlocked", via="FT Edit")  # two days old
+        articles = [*ARTICLES, pick]
+        b = self.run_job([Fake("Claude", ANSWER)], articles=articles)
+        self.assertEqual(b.candidates, 3)  # the two in the window, and the pick
+        self.assertEqual(self.store.state()["unlocked_seen"], [pick.id])
+        later = job.run(self.cfg, self.store, now=NOW + timedelta(days=1), fetch=lambda _: (list(articles), []),
+                        chain=[Fake("Claude", error=RuntimeError("down"))], send=self.send)
+        self.assertEqual(later.candidates, 0)  # nothing new in the window, and the pick was already offered
 
     def test_every_feed_failing_raises_and_says_so(self):
         with self.assertRaises(job.NoFeeds):

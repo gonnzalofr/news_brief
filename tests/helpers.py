@@ -24,7 +24,22 @@ def cfg(tmp: str = "/tmp", **env: str) -> config.Config:
     return config.load(base | env)
 
 
-def art(n: int, title: str, hour: int, day: int = 21, standfirst: str = "") -> Article:
-    uid = f"{n:08d}-0000-0000-0000-000000000000"
-    return Article(uid, f"https://www.ft.com/content/{uid}", title, standfirst or f"About {title.lower()}",
-                   datetime(2026, 11, day, hour, 0, tzinfo=timezone.utc), ["world"])
+def art(n: int, title: str, hour: int, day: int = 21, standfirst: str = "", source: str = "FT", access: str = "paywalled",
+        via: str = "") -> Article:
+    if source == "FT":
+        uid = f"{n:08d}-0000-0000-0000-000000000000"
+        url = f"https://www.ft.com/content/{uid}"
+    else:
+        uid = url = f"https://news.example/{source.lower()}/{n}"
+    return Article(uid, url, title, standfirst or f"About {title.lower()}",
+                   datetime(2026, 11, day, hour, 0, tzinfo=timezone.utc), ["world"], source, access, via)
+
+
+ATOM = b"""<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Tech</title>
+<entry><title>Chip maker &amp; rival merge</title>
+<link rel="alternate" type="text/html" href="https://tech.example/2026/11/21/merge?utm_source=rss#top"/>
+<summary type="html">&lt;p&gt;The deal is worth $5bn&lt;/p&gt;</summary>
+<published>2026-11-21T17:30:00-05:00</published><updated>2026-11-21T23:00:00Z</updated></entry>
+<entry><title>No link</title><published>2026-11-21T10:00:00Z</published></entry>
+</feed>"""

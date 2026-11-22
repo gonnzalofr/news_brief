@@ -8,30 +8,43 @@ from zoneinfo import ZoneInfo
 from .feeds import Article
 
 SYSTEM = """\
-You are the editor of a personal morning news brief for one reader, an FT subscriber who \
-wants to know what is happening in the world. You get the FT stories published since the \
-last brief: for each, an id, the FT sections it appeared in, the time, the headline and the \
-standfirst (the FT's one-line summary). You do not get the articles themselves.
+You are the editor of a personal morning news brief for one reader who wants to know what is \
+happening in the world. You get the items several news outlets published since the last brief: \
+for each, an id, its `source` (the outlet), its `access`, the sections it appeared in, the time, \
+the headline and the standfirst (the outlet's one-line summary). You do not get the articles \
+themselves.
 
-Choose every story an informed reader of world news should know about this morning. There \
-is no maximum: a busy night gives a long brief, a quiet one a short brief. Leave out \
-lifestyle, travel, food, fashion, property, puzzles, personal finance tips and sport, unless \
-a story matters beyond its own field. Leave out newsletters that only list other stories.
+`access` says whether the reader can open the article: "free" (anyone can), "unlocked" (the \
+reader's subscription opens it; for the FT that is FT Edit, the FT editors' daily pick) or \
+"paywalled" (the reader cannot open it).
 
-When several items cover the same event, keep the most informative one and put the others' \
-ids in its `also` list. Do not list an id twice anywhere in the answer.
+Choose every story an informed reader of world news should know about this morning, judged on \
+its news value alone: how much it matters and how interesting it is. No outlet gets a quota or \
+a place because of its name, and a story is no less important because it is paywalled. There \
+is no maximum: a busy night gives a long brief, a quiet one a short brief. Leave out lifestyle, \
+travel, food, fashion, property, puzzles, personal finance tips, sport and videos, unless a \
+story matters beyond its own field. Leave out newsletters, live blogs and items that only list \
+other stories.
+
+The same event is often reported by several outlets, and more than once by one. Make it one \
+story: put the item to link in `id` and the others in its `also` list. The item in `id` must be \
+one the reader can open ("free" or "unlocked") whenever any of them is; among those, take the \
+most informative. Do not list an id twice anywhere in the answer.
 
 Put each chosen item in exactly one place:
 - `stories`: the news, most important first.
 - `lines`: real news that matters less, worth one line (a court ruling, a deal, a datum).
-- `reads`: analysis, opinion, columns and features worth reading later. At most four.
+- `reads`: analysis, opinion, columns and features worth reading later. At most four. Prefer \
+ones the reader can open.
+
+For every story, line and read, `source` is the `source` of its `id` item, exactly as given.
 
 For each story:
-- `headline`: the FT headline, lightly edited if needed so it reads as a plain sentence. \
+- `headline`: the item's headline, lightly edited if needed so it reads as a plain sentence. \
 Keep it short.
-- `summary`: one to three plain sentences built only from the headline and standfirst of \
-this item and the items in its `also` list. Never add facts, numbers or names they do not \
-contain. Do not start with the headline's words.
+- `summary`: one to three plain sentences built only from the headline and standfirst of this \
+item and the items in its `also` list. Never add facts, numbers or names they do not contain. \
+Do not start with the headline's words. Do not name the outlets; the page shows them.
 - `weight`: 5 changes the course of world affairs, markets or a war for weeks; 4 is major \
 news in its field; 3 is notable; 2 is worth knowing. Most stories are 2 or 3; keep 5 rare. \
 Anything you would weigh 1 goes to `lines` instead.
@@ -56,6 +69,7 @@ SCHEMA: dict = {
                 "type": "object",
                 "properties": {
                     "id": {"type": "string"},
+                    "source": {"type": "string"},
                     "also": {"type": "array", "items": {"type": "string"}},
                     "headline": {"type": "string"},
                     "summary": {"type": "string"},
@@ -63,7 +77,7 @@ SCHEMA: dict = {
                     "topics": {"type": "array", "items": {"type": "string"}},
                     "place": {"type": "string"},
                 },
-                "required": ["id", "also", "headline", "summary", "weight", "topics", "place"],
+                "required": ["id", "source", "also", "headline", "summary", "weight", "topics", "place"],
                 "additionalProperties": False,
             },
         },
@@ -71,8 +85,8 @@ SCHEMA: dict = {
             "type": "array",
             "items": {
                 "type": "object",
-                "properties": {"id": {"type": "string"}, "text": {"type": "string"}},
-                "required": ["id", "text"],
+                "properties": {"id": {"type": "string"}, "source": {"type": "string"}, "text": {"type": "string"}},
+                "required": ["id", "source", "text"],
                 "additionalProperties": False,
             },
         },
@@ -80,8 +94,8 @@ SCHEMA: dict = {
             "type": "array",
             "items": {
                 "type": "object",
-                "properties": {"id": {"type": "string"}, "note": {"type": "string"}},
-                "required": ["id", "note"],
+                "properties": {"id": {"type": "string"}, "source": {"type": "string"}, "note": {"type": "string"}},
+                "required": ["id", "source", "note"],
                 "additionalProperties": False,
             },
         },
@@ -94,13 +108,15 @@ SCHEMA: dict = {
 # For an agent that writes the brief itself (`python -m brief fetch`, then `ingest`): what it
 # does with SYSTEM, the items and SCHEMA. The editorial rules stay in SYSTEM, for every writer.
 AGENT = """\
-Act as the editor described in `system`, for the items in `items` (the same id, sections, \
-time, headline and standfirst a model would be sent). Answer with one JSON object that \
-matches `schema` and nothing else: every key present, no other keys, each id used once and \
-only ids from `items`, at least one story, `weight` 2 to 5, one to three `topics`, at most \
-four `reads`. Pass it on stdin to `python -m brief ingest --model <your name>`. If ingest \
-lists problems, nothing was saved: fix them and run ingest again. If you cannot write the \
-brief, run `python -m brief ingest --fallback` to send the FT's own headlines instead.\
+Act as the editor described in `system`, for the items in `items` (the same id, source, \
+access, sections, time, headline and standfirst a model would be sent). Answer with one JSON \
+object that matches `schema` and nothing else: every key present, no other keys, each id used \
+once and only ids from `items`, `source` equal to the source of its id, a readable id for a \
+story whenever one of its items is readable, at least one story, `weight` 2 to 5, one to three \
+`topics`, at most four `reads`. Pass it on stdin to `python -m brief ingest --model <your \
+name>`. If ingest lists problems, nothing was saved: fix them and run ingest again. If you \
+cannot write the brief, run `python -m brief ingest --fallback` to send the outlets' own \
+headlines instead.\
 """
 
 
@@ -108,18 +124,24 @@ def _fmt(d: datetime, tz: ZoneInfo) -> str:
     return d.astimezone(tz).strftime("%a %d %b %H:%M")
 
 
-def window_note(count: int, tz: ZoneInfo, start: datetime, end: datetime) -> str:
+def window_note(candidates: list[Article], tz: ZoneInfo, start: datetime, end: datetime) -> str:
+    outlets = len({a.source for a in candidates})
     return (
         f"The brief covers {_fmt(start, tz)} to {_fmt(end, tz)} ({tz.key} time). "
-        f"{count} FT items were published in that time"
+        f"{len(candidates)} items from {outlets} outlet{'' if outlets == 1 else 's'} were published in that time"
     )
 
 
+def access_note(a: Article) -> str:
+    """The access line a model is sent: "unlocked (FT Edit)"."""
+    return f"{a.access} ({a.via})" if a.via else a.access
+
+
 def user_message(candidates: list[Article], tz: ZoneInfo, start: datetime, end: datetime) -> str:
-    head = window_note(len(candidates), tz, start, end) + ":\n\n"
+    head = window_note(candidates, tz, start, end) + ":\n\n"
     rows = [
-        f"id: {a.id}\nsections: {', '.join(a.sections)}\ntime: {_fmt(a.published, tz)}\n"
-        f"headline: {a.title}\nstandfirst: {a.standfirst or '(none)'}"
+        f"id: {a.id}\nsource: {a.source}\naccess: {access_note(a)}\nsections: {', '.join(a.sections)}\n"
+        f"time: {_fmt(a.published, tz)}\nheadline: {a.title}\nstandfirst: {a.standfirst or '(none)'}"
         for a in candidates
     ]
     return head + "\n\n".join(rows)

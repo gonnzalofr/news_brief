@@ -7,7 +7,8 @@ import unittest
 import urllib.error
 import urllib.request
 from contextlib import redirect_stderr, redirect_stdout
-from datetime import datetime
+from dataclasses import replace
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest import mock
 from zoneinfo import ZoneInfo
@@ -16,7 +17,7 @@ from brief import __main__ as cli
 from brief import config, external, job, prompt, server
 from brief.model import problems
 from brief.store import Store
-from tests.helpers import cfg
+from tests.helpers import art, cfg
 from tests.test_job import ANSWER, ARTICLES
 
 TZ = ZoneInfo("Europe/Amsterdam")
@@ -24,8 +25,14 @@ NOW = datetime(2026, 11, 22, 7, 0, tzinfo=TZ)  # a Sunday
 IDS = [a.id for a in ARTICLES]
 
 
-def fake_fetch(_sections):
+def fake_fetch(_sources):
     return list(ARTICLES), ["markets: timed out"]
+
+
+def recent_fetch(_sources):
+    """The same articles, an hour and two old: the CLI runs on the real clock."""
+    now = datetime.now(TZ)
+    return [replace(a, published=now - timedelta(hours=i + 1), sections=list(a.sections)) for i, a in enumerate(ARTICLES[:2])], []
 
 
 class ExternalTest(unittest.TestCase):
@@ -57,13 +64,23 @@ class ExternalTest(unittest.TestCase):
         self.assertEqual(out["brief"]["feed_errors"], ["markets: timed out"])
         self.assertEqual([i["id"] for i in out["items"]], IDS[:2])  # the one from the 19th is outside the window
         item = out["items"][0]
-        self.assertEqual(set(item), {"id", "headline", "standfirst", "sections", "url", "published"})
+        self.assertEqual(set(item), {"id", "source", "access", "via", "headline", "standfirst", "sections", "url", "published"})
+        self.assertEqual((item["source"], item["access"]), ("FT", "paywalled"))
         self.assertEqual(out["instructions"]["system"], prompt.SYSTEM)
         self.assertEqual(out["instructions"]["schema"], prompt.SCHEMA)
-        self.assertIn("2 FT items", out["instructions"]["context"])
+        self.assertIn("2 items from 1 outlet were published", out["instructions"]["context"])
         pending = json.loads(self.store.pending_path.read_text(encoding="utf-8"))
         self.assertEqual(pending["items"], out["items"])
         self.assertEqual(self.pushes, [])
+
+    def test_ingest_records_the_unlocked_ids_it_was_fetched_with(self):
+        pick = art(9, "An FT Edit pick", 5, day=20, access="unlocked", via="FT Edit")
+        out = self.fetch(lambda _: ([*ARTICLES, pick], []))
+        self.assertEqual(out["brief"]["unlocked"], [pick.id])
+        self.assertIn(pick.id, [i["id"] for i in out["items"]])
+        self.assertNotIn("unlocked_seen", self.store.state())  # not until the brief goes out
+        self.ingest(None, fallback=True)
+        self.assertEqual(self.store.state()["unlocked_seen"], [pick.id])
 
     def test_fetch_with_every_feed_failing_raises_and_pushes(self):
         with self.assertRaises(job.NoFeeds):
@@ -165,7 +182,7 @@ class CliTest(unittest.TestCase):
         env = {"DATA_DIR": self.tmp.name, "TZ": "Europe/Amsterdam", "NTFY_URL": "", "BRIEF_URL": "https://brief.example"}
         self.env = mock.patch.dict(os.environ, env)
         self.env.start()
-        self.feeds = mock.patch("brief.feeds.fetch", fake_fetch)
+        self.feeds = mock.patch("brief.feeds.fetch", recent_fetch)
         self.feeds.start()
 
     def tearDown(self):
@@ -185,7 +202,7 @@ class CliTest(unittest.TestCase):
         items = json.loads(out)["items"]
         self.assertEqual(len(items), 2)
 
-        answer = {"stories": [{"id": items[0]["id"], "also": [], "headline": "Talks stall", "summary": "They stalled.",
+        answer = {"stories": [{"id": items[0]["id"], "source": "FT", "also": [], "headline": "Talks stall", "summary": "They stalled.",
                                "weight": 4, "topics": ["Energy"], "place": "Antalya"}], "lines": [], "reads": []}
         code, out, _ = self.run_cli("ingest", "--model", "antigravity", stdin=json.dumps(answer))
         self.assertEqual(code, 0)
@@ -207,7 +224,7 @@ class CliTest(unittest.TestCase):
         self.assertEqual((code, out), (0, ""))
         items = json.loads(path.read_text(encoding="utf-8"))["items"]
         answer = Path(self.tmp.name) / "answer.json"
-        answer.write_text(json.dumps({"stories": [{"id": items[1]["id"], "also": [], "headline": "Oil falls", "summary": "It fell.",
+        answer.write_text(json.dumps({"stories": [{"id": items[1]["id"], "source": "FT", "also": [], "headline": "Oil falls", "summary": "It fell.",
                                                    "weight": 2, "topics": ["Oil"], "place": ""}], "lines": [], "reads": []}))
         code, out, _ = self.run_cli("ingest", "--input", str(answer), "--date", "2026-11-22", "--no-push")
         self.assertEqual((code, json.loads(out)["date"]), (0, "2026-11-22"))

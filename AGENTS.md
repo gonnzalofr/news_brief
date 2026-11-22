@@ -10,9 +10,14 @@ reach here are repeated below.
 - **This repository is public.** No API key, ntfy topic, tailnet name or password goes in it,
   its history or CI's logs. Real values live only in `.env` on the machine. Look at
   `git status` and the diff before every commit.
-- **Only the FT's public feeds.** Don't add a login, a cookie, or scraping of ft.com articles.
-  The summaries are built from headline and standfirst only, and the prompt says so; keep it
-  that way so the brief never states something the FT didn't.
+- **Only public feeds**, listed in `brief/sources.toml`. Don't add a login, a cookie, an API key
+  or scraping of any article page. The summaries are built from headline and standfirst only,
+  and the prompt says so; keep it that way so the brief never states something an outlet didn't.
+- **The FT is FT Edit.** The reader's licence opens only the FT Edit selection; its public feed
+  (`unlocked` in `sources.toml`) marks those items readable, every other FT item is paywalled,
+  and when that feed fails all of them are. Never label an item readable without that evidence.
+- **Every item shows its outlet.** `source` and `access` come from the feeds, never from the
+  model; the model's `source` is only checked against them (`model.problems`).
 - **Claude, then Gemini, then OpenAI**, each through its own official SDK (`brief/llm.py`). A
   new provider is one more class with `configured()` and `complete()`, added to `providers()`.
   Any failure moves on to the next; no provider is retried in a loop.
@@ -21,7 +26,7 @@ reach here are repeated below.
   `model.problems` (strict, every problem listed, read from `SCHEMA`) before the same
   `model.from_model`. The editorial rules stay in `prompt.py` for every writer; a rule added to
   `SYSTEM` that can be checked goes in `problems` too.
-- **A brief always goes out.** If every model fails, the FT's headlines go out instead; only
+- **A brief always goes out.** If every model fails, the outlets' headlines go out instead; only
   every feed failing stops a run, and that is pushed too. In external mode that is the
   agent's job (`ingest --fallback` when it can't write one); `/readyz` is the alarm if it doesn't.
 - **Model text is untrusted.** Everything from a model or a feed is escaped in `render.py`, and

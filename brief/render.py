@@ -10,6 +10,7 @@ from datetime import date, datetime
 from html import escape
 from zoneinfo import ZoneInfo
 
+from .feeds import PAYWALLED, UNLOCKED
 from .model import Brief, Story, related
 
 FONTS_URL = "https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap"
@@ -31,6 +32,9 @@ CSS = """
   --s-lead: calc(54px * var(--scale)); --s-head: calc(25px * var(--scale)); --s-body: calc(18px * var(--scale));
   --s-meta: calc(15px * var(--scale)); --s-plate: calc(34px * var(--scale));
   --row: calc(22px * var(--density)); --section: calc(56px * var(--density)); --num-col: 56px;
+  /* The outlet beside each headline: free to read, opened by the reader's subscription (FT Edit), paywalled. */
+  --src-size: calc(11px * var(--scale)); --src-track: 0.12em; --src-ink: var(--ink-2); --src-line: var(--line);
+  --src-open: var(--accent); --src-shut: var(--muted);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -85,6 +89,12 @@ h2 a:hover, h3 a:hover { text-decoration: underline; text-underline-offset: 3px;
 .topics { font-size: calc(var(--s-meta) - 3px); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); }
 .topics span + span::before { content: " · "; color: var(--muted); letter-spacing: 0; }
 .see, .when { font-style: italic; }
+.src { display: inline-block; vertical-align: 0.22em; margin-left: 0.45em; padding: 0.3em 0.55em 0.22em; line-height: 1; white-space: nowrap;
+  font-family: var(--font-body); font-style: normal; font-weight: 500; font-size: var(--src-size); letter-spacing: var(--src-track);
+  text-transform: uppercase; color: var(--src-ink); border: 1px solid var(--src-line); border-radius: 2px; }
+.src.open { color: var(--src-open); border-color: var(--src-open); }
+.src.shut { color: var(--src-shut); border-style: dashed; }
+.lead h2 .src { vertical-align: 0.55em; font-size: calc(var(--src-size) + 1px); }
 .see a { color: var(--accent); text-decoration: none; }
 .see a:hover { text-decoration: underline; }
 
@@ -220,6 +230,26 @@ def _short(s: Story) -> str:
     return " ".join(words[:4]) + ("…" if len(words) > 4 else "")
 
 
+def src(label: str, access: str) -> str:
+    """The outlet beside a headline: "BBC", "FT Edit" (opens through the subscription), "FT · paywalled"."""
+    kind = {UNLOCKED: " open", PAYWALLED: " shut"}.get(access, "")
+    hint = {UNLOCKED: "Opens with your subscription", PAYWALLED: "Paywalled: will not open in full"}.get(access, "Free to read")
+    title = f' title="{hint}"' if access else ""
+    return f'<span class="src{kind}"{title}>{e(label)}</span>'
+
+
+def _also(s: Story) -> str:
+    """The other reports of a story, one name per outlet: "Guardian, CNBC (1, 2), FT · paywalled"."""
+    link = lambda url, text: f'<a href="{e(url)}" target="_blank" rel="noopener">{e(text)}</a>'  # noqa: E731
+    groups: dict[str, list[str]] = {}
+    for a in s.also:
+        groups.setdefault(a.label, []).append(a.url)
+    return ", ".join(
+        link(urls[0], name) if len(urls) == 1 else f"{e(name)} ({', '.join(link(u, str(n)) for n, u in enumerate(urls, 1))})"
+        for name, urls in groups.items()
+    )
+
+
 def _rel(i: int, stories: list[Story], links: list[list[int]]) -> str:
     s = stories[i]
     parts = []
@@ -231,8 +261,7 @@ def _rel(i: int, stories: list[Story], links: list[list[int]]) -> str:
         )
         parts.append(f'<span class="see">Also here: {refs}</span>')
     if s.also:
-        more = ", ".join(f'<a href="{e(u)}" target="_blank" rel="noopener">{n}</a>' for n, u in enumerate(s.also, 1))
-        parts.append(f'<span class="see">More FT reports: {more}</span>')
+        parts.append(f'<span class="see">Also reported by {_also(s)}</span>')
     return f'<div class="rel">{"".join(parts)}</div>' if parts else ""
 
 
@@ -259,9 +288,17 @@ def brief_page(b: Brief, tz: ZoneInfo, prev_date: str | None = None, next_date: 
     stories, links = b.stories, related(b.stories)
     weighed = any(s.weight for s in stories)
 
+    every = [*stories, *b.lines, *b.reads]
+    outlets = sorted({x.source for x in every})
+    if outlets and not any(x.access for x in every):
+        frm = "from the Financial Times, "  # briefs from before 0.3.0 had only the FT
+    elif outlets:
+        frm = f"from {len(outlets)} outlets, " if len(outlets) > 1 else f"from {outlets[0]}, "
+    else:
+        frm = ""
     plate = (
         f'<header class="plate"><div class="k">{e(day.strftime("%A"))}</div><h1 class="n">Morning Brief</h1>'
-        f'<div class="by">from the Financial Times, {e(_long_date(day))}</div>'
+        f'<div class="by">{e(frm)}{e(_long_date(day))}</div>'
         + (f'<div class="key">{meter(3)} <span>weight, one to five</span></div>' if weighed else "")
         + "</header>"
     )
@@ -270,8 +307,8 @@ def brief_page(b: Brief, tz: ZoneInfo, prev_date: str | None = None, next_date: 
     if not b.writer and stories:
         items = "".join(f"<li>{e(f)}</li>" for f in b.failures)
         notice = (
-            '<section class="notice"><p>No model could write this brief, so these are the FT’s own headlines and '
-            "standfirsts, newest first, with no weights or topics.</p>"
+            '<section class="notice"><p>No model could write this brief, so these are the outlets’ own headlines and '
+            "standfirsts, newest first, with no weights or topics, and the same news may appear more than once.</p>"
             f"<details><summary>What failed</summary><ul>{items}</ul></details></section>"
         )
 
@@ -283,7 +320,7 @@ def brief_page(b: Brief, tz: ZoneInfo, prev_date: str | None = None, next_date: 
         body += (
             f'<article class="lead" id="s1"><div class="top">{meter(lead.weight, True)}'
             f'<span class="meta">{meta}<span class="when">{e(_when(lead.published, tz))}</span></span></div>'
-            f'<h2><a href="{e(lead.url)}" target="_blank" rel="noopener">{e(lead.headline)}</a></h2>'
+            f'<h2><a href="{e(lead.url)}" target="_blank" rel="noopener">{e(lead.headline)}</a>{src(lead.label, lead.access)}</h2>'
             f"<p>{e(lead.summary)}</p>{_rel(0, stories, links)}</article>"
         )
         rows = []
@@ -291,24 +328,24 @@ def brief_page(b: Brief, tz: ZoneInfo, prev_date: str | None = None, next_date: 
             where = " · ".join(e(x) for x in (s.place, _when(s.published, tz)) if x)
             rows.append(
                 f'<article class="item" id="s{i + 1}"><div class="no"><span>#{i + 1:02d}</span>{meter(s.weight)}</div>'
-                f'<div><h3><a href="{e(s.url)}" target="_blank" rel="noopener">{e(s.headline)}</a></h3>'
+                f'<div><h3><a href="{e(s.url)}" target="_blank" rel="noopener">{e(s.headline)}</a>{src(s.label, s.access)}</h3>'
                 + (f"<p>{e(s.summary)}</p>" if s.summary else "")
                 + f'<div class="rel"><span class="when">{where}</span></div>{_rel(i, stories, links)}</div></article>'
             )
         if rows:
             body += f'<div class="idx">{"".join(rows)}</div>'
     else:
-        body += '<p class="empty">Nothing new from the FT since the last brief.</p>'
+        body += '<p class="empty">Nothing new since the last brief.</p>'
 
     if b.lines:
         lis = "".join(
-            f'<li><a href="{e(x.url)}" target="_blank" rel="noopener">{e(x.text)}</a> <span class="t">{e(_when(x.published, tz))}</span></li>'
+            f'<li><a href="{e(x.url)}" target="_blank" rel="noopener">{e(x.text)}</a>{src(x.label, x.access)} <span class="t">{e(_when(x.published, tz))}</span></li>'
             for x in b.lines
         )
         body += f'<section class="sub"><h2>Also</h2><ul>{lis}</ul></section>'
     if b.reads:
         lis = "".join(
-            f'<li><a href="{e(r.url)}" target="_blank" rel="noopener">{e(r.headline)}</a> <span class="w">{e(r.note)}</span></li>'
+            f'<li><a href="{e(r.url)}" target="_blank" rel="noopener">{e(r.headline)}</a>{src(r.label, r.access)} <span class="w">{e(r.note)}</span></li>'
             for r in b.reads
         )
         body += f'<section class="sub"><h2>{"For the weekend" if weekend else "For later"}</h2><ul>{lis}</ul></section>'
@@ -323,7 +360,7 @@ def brief_page(b: Brief, tz: ZoneInfo, prev_date: str | None = None, next_date: 
     if next_date:
         nav.append(f'<a href="/{e(next_date)}">{e(date.fromisoformat(next_date).strftime("%A %d %b"))} ›</a>')
     foot = (
-        f'<footer class="foot"><p>About {_minutes(b)} minute{"s" if _minutes(b) != 1 else ""}. {count} from {b.candidates} FT items, '
+        f'<footer class="foot"><p>About {_minutes(b)} minute{"s" if _minutes(b) != 1 else ""}. {count} from {b.candidates} items, '
         f'{e(start.strftime("%a %H:%M"))} to {e(end.strftime("%a %H:%M"))} ({e(tz.key)}). {by}</p>'
         f'<nav>{"".join(nav)}</nav></footer>'
     )

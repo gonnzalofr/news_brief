@@ -1,0 +1,138 @@
+# Where the morning brief's news comes from. Edit this file to add, drop or change an outlet;
+# point SOURCES_FILE at your own copy to change it without rebuilding the image.
+#
+# Each [[source]] is one outlet:
+#   name      what the page shows next to each item ("BBC", "FT"). Keep it short.
+#   access    "free": every item opens in full. "paywalled": only items in `unlocked` open; the
+#             rest show "<name> · paywalled".
+#   unlocked  optional, for a paywalled outlet: a feed whose items your subscription opens.
+#             Its items are read like the others, and shown with `unlocked_label`.
+#   feeds     section = feed URL. RSS 2.0 or Atom; public, no login, no API key.
+#
+# Only public feeds: headline, standfirst, link and time. Nothing here logs in anywhere or
+# reads the articles. The model ranks every item on its news value; no outlet gets a quota.
+
+# The FT. The reader's licence is FT Edit: the eight pieces a day the FT's editors pick, which
+# open in full; any other FT article asks to subscribe. The FT Edit feed is the stream behind
+# ft.com/ft-edit, so its items are marked FT Edit and the rest FT · paywalled.
+[[source]]
+name = "FT"
+access = "paywalled"
+unlocked = "https://www.ft.com/ft-edit?format=rss"
+unlocked_label = "FT Edit"
+
+[source.feeds]
+world = "https://www.ft.com/world?format=rss"
+us = "https://www.ft.com/us?format=rss"
+europe = "https://www.ft.com/europe?format=rss"
+asia-pacific = "https://www.ft.com/asia-pacific?format=rss"
+middle-east-north-africa = "https://www.ft.com/middle-east-north-africa?format=rss"
+africa = "https://www.ft.com/africa?format=rss"
+americas = "https://www.ft.com/americas?format=rss"
+world-uk = "https://www.ft.com/world-uk?format=rss"
+global-economy = "https://www.ft.com/global-economy?format=rss"
+companies = "https://www.ft.com/companies?format=rss"
+markets = "https://www.ft.com/markets?format=rss"
+technology = "https://www.ft.com/technology?format=rss"
+climate-capital = "https://www.ft.com/climate-capital?format=rss"
+opinion = "https://www.ft.com/opinion?format=rss"
+
+# World, business and technology; the broadest free general news service in English, careful
+# with facts. (Free outside the US; in the US bbc.com now charges for some pages.)
+[[source]]
+name = "BBC"
+access = "free"
+
+[source.feeds]
+world = "https://feeds.bbci.co.uk/news/world/rss.xml"
+business = "https://feeds.bbci.co.uk/news/business/rss.xml"
+technology = "https://feeds.bbci.co.uk/news/technology/rss.xml"
+
+# No paywall at all (it asks for donations). Deep world and Europe desks, good on the
+# economy, and a dedicated AI section.
+[[source]]
+name = "Guardian"
+access = "free"
+
+[source.feeds]
+world = "https://www.theguardian.com/world/rss"
+europe = "https://www.theguardian.com/world/europe-news/rss"
+business = "https://www.theguardian.com/business/rss"
+economics = "https://www.theguardian.com/business/economics/rss"
+ai = "https://www.theguardian.com/technology/artificialintelligenceai/rss"
+
+# Germany's public international broadcaster: Europe and the EU seen from Berlin, and
+# Central and Eastern Europe, which the British outlets cover less.
+[[source]]
+name = "DW"
+access = "free"
+
+[source.feeds]
+top = "https://rss.dw.com/xml/rss-en-top"
+europe = "https://rss.dw.com/xml/rss-en-eu"
+business = "https://rss.dw.com/xml/rss-en-bus"
+
+# The EU institutions from the inside: Commission, Parliament, Council, member-state politics.
+# The articles are free; only its Pro policy service is paid, and it isn't in this feed.
+[[source]]
+name = "Politico Europe"
+access = "free"
+
+[source.feeds]
+europe = "https://www.politico.eu/feed/"
+
+# The Middle East, Africa and South Asia, with reporters on the ground where others have few.
+[[source]]
+name = "Al Jazeera"
+access = "free"
+
+[source.feeds]
+all = "https://www.aljazeera.com/xml/rss/all.xml"
+
+# Markets and the US economy as they move: earnings, the Fed, the big deals. Free; CNBC Pro
+# pieces are paid and don't appear in these feeds.
+[[source]]
+name = "CNBC"
+access = "free"
+
+[source.feeds]
+top = "https://www.cnbc.com/id/100003114/device/rss/rss.html"
+economy = "https://www.cnbc.com/id/20910258/device/rss/rss.html"
+finance = "https://www.cnbc.com/id/10000664/device/rss/rss.html"
+
+# Technology and science reported by specialists, sober about AI claims.
+[[source]]
+name = "Ars Technica"
+access = "free"
+
+[source.feeds]
+all = "https://feeds.arstechnica.com/arstechnica/index"
+
+# The AI industry day to day: funding, launches, the companies.
+[[source]]
+name = "TechCrunch"
+access = "free"
+
+[source.feeds]
+ai = "https://techcrunch.com/category/artificial-intelligence/feed/"
+
+# More free outlets that were checked and work, left out to keep the brief's input small.
+# Remove the # to add one.
+#
+# [[source]]
+# name = "France 24"
+# access = "free"
+# [source.feeds]
+# all = "https://www.france24.com/en/rss"
+#
+# [[source]]
+# name = "Euronews"
+# access = "free"
+# [source.feeds]
+# all = "https://www.euronews.com/rss"
+#
+# [[source]]
+# name = "NPR"
+# access = "free"
+# [source.feeds]
+# world = "https://feeds.npr.org/1004/rss.xml"

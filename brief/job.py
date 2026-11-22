@@ -29,26 +29,43 @@ def window(store: Store, cfg: Config, now: datetime) -> tuple[datetime, datetime
 
 def collect(
     cfg: Config, store: Store, now: datetime, push: bool = True, fetch: Callable = feeds.fetch, send: Callable = notify.send
-) -> tuple[datetime, datetime, list[feeds.Article], list[str]]:
-    """The window, the articles in it and the feeds that failed. Raises NoFeeds, pushed, when all failed."""
+) -> tuple[datetime, datetime, list[feeds.Article], list[str], list[str]]:
+    """The window, the articles for the brief, the feeds that failed and the ids now unlocked.
+
+    The articles are those published in the window, and every unlocked one (FT Edit) that wasn't
+    unlocked at the last brief: a day's FT Edit picks are often published before the window
+    opens, and they are the FT pieces the reader can open. Raises NoFeeds, pushed, when all failed.
+    """
     store.set_state(last_attempt=iso(now))
     start, end = window(store, cfg, now)
-    articles, feed_errors = fetch(cfg.feeds)
+    articles, feed_errors = fetch(cfg.sources)
     if not articles:
-        msg = "Every FT feed failed: " + "; ".join(feed_errors)[:500]
+        msg = "Every feed failed: " + "; ".join(feed_errors)[:500]
         store.set_state(last_error=msg)
         if push:
             send(cfg.ntfy_url, cfg.ntfy_token, "Morning brief failed", msg, priority=4, tags=["warning"])
         raise NoFeeds(msg)
     candidates = feeds.in_window(articles, start, end)
-    log.info("%d articles from %d feeds, %d in the window", len(articles), len(cfg.feeds), len(candidates))
-    return start, end, candidates, feed_errors
+    unlocked = [a for a in articles if a.access == feeds.UNLOCKED]
+    seen = set(store.state().get("unlocked_seen") or [])
+    earliest = now - timedelta(hours=cfg.max_window_hours)
+    new = [a for a in unlocked if a.id not in seen and earliest < a.published <= start]
+    candidates = sorted(candidates + new, key=lambda a: a.published, reverse=True)
+    log.info("%d articles from %d sources, %d in the window, %d more newly unlocked", len(articles), len(cfg.sources),
+             len(candidates) - len(new), len(new))
+    return start, end, candidates, feed_errors, sorted(a.id for a in unlocked)
 
 
-def publish(cfg: Config, store: Store, brief: Brief, push: bool = True, send: Callable = notify.send) -> bool:
-    """Saves the brief, records the success, and pushes it. True when the push went out."""
+def publish(
+    cfg: Config, store: Store, brief: Brief, push: bool = True, send: Callable = notify.send, unlocked: list[str] | None = None
+) -> bool:
+    """Saves the brief, records the success (and the ids unlocked when it was fetched), and pushes it.
+
+    True when the push went out.
+    """
     store.save(brief)
-    store.set_state(last_success=brief.issued, last_error="", last_writer=brief.writer)
+    seen = {} if unlocked is None else {"unlocked_seen": unlocked}
+    store.set_state(last_success=brief.issued, last_error="", last_writer=brief.writer, **seen)
     return _push(cfg, brief, send) if push else False
 
 
@@ -62,7 +79,7 @@ def run(
     send: Callable = notify.send,
 ) -> Brief:
     now = (now or datetime.now(cfg.tz)).astimezone(cfg.tz)
-    start, end, candidates, feed_errors = collect(cfg, store, now, push, fetch, send)
+    start, end, candidates, feed_errors, unlocked = collect(cfg, store, now, push, fetch, send)
 
     stories, lines, reads, writer, failures = [], [], [], "", []
     if candidates:
@@ -92,7 +109,7 @@ def run(
         writer=writer,
         failures=failures + [f"feed {x}" for x in feed_errors],
     )
-    publish(cfg, store, brief, push, send)
+    publish(cfg, store, brief, push, send, unlocked)
     return brief
 
 
@@ -100,13 +117,13 @@ def _push(cfg: Config, brief: Brief, send: Callable) -> bool:
     day = datetime.fromisoformat(brief.issued)
     title = f"Morning brief · {day.strftime('%a %d %b')}"
     if not brief.stories:
-        lines = ["Nothing new from the FT since the last brief."]
+        lines = ["Nothing new since the last brief."]
     else:
         lines = [f"• {s.headline}" for s in brief.stories[:3]]
         if len(brief.stories) > 3:
             lines.append(f"and {len(brief.stories) - 3} more")
     if brief.stories and not brief.writer:
-        lines.append("No model could write it today: these are the FT's own headlines.")
+        lines.append("No model could write it today: these are the outlets' own headlines.")
     click = f"{cfg.brief_url}/{brief.date}" if cfg.brief_url else ""
     return send(cfg.ntfy_url, cfg.ntfy_token, title, "\n".join(lines), click=click,
          priority=3 if brief.writer or not brief.stories else 4, tags=["newspaper"])

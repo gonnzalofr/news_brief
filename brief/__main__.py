@@ -27,7 +27,7 @@ def _day(value: str) -> str:
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="python -m brief", description="The FT morning brief.")
+    parser = argparse.ArgumentParser(prog="python -m brief", description="The morning brief.")
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("serve", help="the pages, and the brief every day at BRIEF_TIME unless BRIEF_MODE=external")
     run = sub.add_parser("run", help="write today's brief now, with the model APIs")
@@ -42,7 +42,7 @@ def _parser() -> argparse.ArgumentParser:
     ingest.add_argument("--model", default="", metavar="LABEL", help="who wrote it, for the footer (e.g. claude)")
     ingest.add_argument("--date", type=_day, metavar="YYYY-MM-DD", help="the day it is for; the fetch's day by default")
     ingest.add_argument("--no-push", action="store_true", help="don't send the ntfy push")
-    ingest.add_argument("--fallback", action="store_true", help="publish the FT's own headlines; no answer is read")
+    ingest.add_argument("--fallback", action="store_true", help="publish the outlets' own headlines; no answer is read")
 
     latest = sub.add_parser("latest", help="the latest brief's headlines")
     latest.add_argument("--json", action="store_true", help="the whole brief as JSON: date, lead, stories, summaries")
