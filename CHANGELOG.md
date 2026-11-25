@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.0 (25 Nov 2026)
+
+Only what the reader can open.
+
+- A paywalled item (an FT piece outside FT Edit) no longer gets a story, line or read of its
+  own, and is no longer linked under *Also reported by*. The model still reads it: when it
+  matters, the story links a free or FT Edit report of the same event instead; when there is
+  none, it is left out.
+- `ingest` rejects a paywalled id anywhere but a story's `also`; the model API path drops it.
+- The no-model fallback lists only items the reader can open.
+
 ## 0.4.1 (22 Nov 2026)
 
 - A switch at the top right of every page: Auto (follow the device), Light or Dark. The choice is

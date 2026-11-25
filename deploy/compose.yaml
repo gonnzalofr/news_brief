@@ -16,7 +16,7 @@ name: news-brief
 
 services:
   news-brief:
-    image: ghcr.io/gonnzalofr/news-brief:0.4.1
+    image: ghcr.io/gonnzalofr/news-brief:0.5.0
     container_name: news-brief
     restart: unless-stopped
     # A ceiling, so a leak here can't take the machine's memory from the others.
