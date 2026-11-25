@@ -14,10 +14,15 @@ ntfy. It runs as one Docker image on the homelab, reached over Tailscale.
 - **Also**: smaller news, one line each.
 - **For later** (for the weekend on Saturdays and Sundays): up to six pieces of analysis, opinion
   and long reads worth reading, from across the outlets.
-- **Where each item is from**, beside its headline: the outlet (`BBC`, `Guardian`), `FT Edit`
-  for an FT piece the reader's FT Edit licence opens, or `FT · paywalled` for one it doesn't.
-- When several outlets report the same event it is one story: the headline links to a version
-  the reader can open, and *Also reported by* links the others (`FT · paywalled, DW, CNBC (1, 2)`).
+- **Only what the reader can open.** Every link opens in full: free outlets, and the FT
+  pieces the reader's FT Edit licence opens. Each item shows where it is from beside its
+  headline: the outlet (`BBC`, `Guardian`) or `FT Edit`.
+- When several outlets report the same event it is one story: the headline links to one
+  version, and *Also reported by* links the others the reader can open (`DW, CNBC (1, 2)`).
+- **Paywalled FT stories are replaced, not shown.** The model still reads every FT headline;
+  when a paywalled one matters, it links a free or FT Edit report of the same event instead.
+  When no other outlet in the feeds has the story yet, it is left out. (Briefs from before
+  0.5.0 still show their `FT · paywalled` items.)
 
 Past briefs stay at `/<date>` and are listed at `/archive`.
 
@@ -53,7 +58,8 @@ Economist and Le Monde have paywalls (NYT Opinion is in the file, commented out,
 editors pick open in full, and any other FT article asks to subscribe. The FT publishes that
 selection as a public feed, `https://www.ft.com/ft-edit?format=rss` (the stream behind
 ft.com/ft-edit; the page itself refuses automated readers). Every FT item in that feed when the
-brief is fetched is `unlocked` and shown as **FT Edit**; every other FT item is `paywalled`. If
+brief is fetched is `unlocked` and shown as **FT Edit**; every other FT item is `paywalled`,
+which the model uses only to judge what matters and to find another outlet's report of it. If
 the FT Edit feed fails, every FT item counts as paywalled, so the brief never promises an
 article opens when it may not. The feed has the same `https://www.ft.com/content/<id>` links as
 the rest of ft.com, so that is the link the brief uses.
@@ -102,9 +108,9 @@ that, as the daily run does, unless `--no-push`.
 
 `ingest` reads the answer on stdin (or `--input <path>`) and checks it against
 `pending.json`: every key the schema asks for and no others, only ids from the items, each id
-once, a `source` on every story, line and read equal to its id's source, a readable id for a
-story whenever one of its items is readable, weights 2 to 5, one to three topics, at most six
-reads, at least one story. When it
+once, a `source` on every story, line and read equal to its id's source, a free or unlocked
+id for every story, line and read (paywalled ids only in a story's `also`), weights 2 to 5, one
+to three topics, at most six reads, at least one story. When it
 doesn't hold up, ingest saves nothing, keeps `pending.json`, prints every problem
 (`stories[2].weight must be one of 2, 3, 4, 5, not 7`) on stderr and as `{"ok": false,
 "errors": [...]}` on stdout, and exits 2; the agent fixes the answer and runs it again. When it

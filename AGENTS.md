@@ -16,6 +16,10 @@ reach here are repeated below.
 - **The FT is FT Edit.** The reader's licence opens only the FT Edit selection; its public feed
   (`unlocked` in `sources.toml`) marks those items readable, every other FT item is paywalled,
   and when that feed fails all of them are. Never label an item readable without that evidence.
+- **Only what the reader can open is shown.** A paywalled item never gets a place of its own
+  and is never linked: it can only sit in a story's `also`, which helps the model find a free
+  or FT Edit report of the same event to link instead. `model.from_model` drops the rest,
+  `model.problems` rejects it, and the no-model fallback leaves it out.
 - **Every item shows its outlet.** `source` and `access` come from the feeds, never from the
   model; the model's `source` is only checked against them (`model.problems`).
 - **Claude, then Gemini, then OpenAI**, each through its own official SDK (`brief/llm.py`). A

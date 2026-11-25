@@ -65,7 +65,7 @@ class ExternalTest(unittest.TestCase):
         self.assertEqual([i["id"] for i in out["items"]], IDS[:2])  # the one from the 19th is outside the window
         item = out["items"][0]
         self.assertEqual(set(item), {"id", "source", "access", "via", "headline", "standfirst", "sections", "url", "published"})
-        self.assertEqual((item["source"], item["access"]), ("FT", "paywalled"))
+        self.assertEqual((item["source"], item["access"]), ("FT", "free"))
         self.assertEqual(out["instructions"]["system"], prompt.SYSTEM)
         self.assertEqual(out["instructions"]["schema"], prompt.SCHEMA)
         self.assertIn("2 items from 1 outlet were published", out["instructions"]["context"])

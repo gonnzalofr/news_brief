@@ -4,7 +4,8 @@
 # Each [[source]] is one outlet:
 #   name      what the page shows next to each item ("BBC", "FT"). Keep it short.
 #   access    "free": every item opens in full. "paywalled": only items in `unlocked` open; the
-#             rest show "<name> · paywalled".
+#             rest are never shown or linked, and only help the model find a free report of
+#             the same event.
 #   unlocked  optional, for a paywalled outlet: a feed whose items your subscription opens.
 #             Its items are read like the others, and shown with `unlocked_label`.
 #   feeds     section = feed URL. RSS 2.0 or Atom; public, no login, no API key.
@@ -14,7 +15,7 @@
 
 # The FT. The reader's licence is FT Edit: the eight pieces a day the FT's editors pick, which
 # open in full; any other FT article asks to subscribe. The FT Edit feed is the stream behind
-# ft.com/ft-edit, so its items are marked FT Edit and the rest FT · paywalled.
+# ft.com/ft-edit, so its items are marked FT Edit; the rest are paywalled and not shown.
 [[source]]
 name = "FT"
 access = "paywalled"
@@ -176,7 +177,7 @@ latest = "https://restofworld.org/feed/latest"
 # [source.feeds]
 # all = "https://www.semafor.com/rss.xml"
 #
-# Paywalled, like the FT without FT Edit: every item would show "NYT · paywalled".
+# Paywalled, like the FT without FT Edit: its items would only help find free reports.
 # [[source]]
 # name = "NYT"
 # access = "paywalled"

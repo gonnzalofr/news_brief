@@ -24,7 +24,7 @@ def cfg(tmp: str = "/tmp", **env: str) -> config.Config:
     return config.load(base | env)
 
 
-def art(n: int, title: str, hour: int, day: int = 21, standfirst: str = "", source: str = "FT", access: str = "paywalled",
+def art(n: int, title: str, hour: int, day: int = 21, standfirst: str = "", source: str = "FT", access: str = "free",
         via: str = "") -> Article:
     if source == "FT":
         uid = f"{n:08d}-0000-0000-0000-000000000000"

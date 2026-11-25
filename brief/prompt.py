@@ -21,25 +21,32 @@ themselves.
 reader's subscription opens it; for the FT that is FT Edit, the FT editors' daily pick) or \
 "paywalled" (the reader cannot open it).
 
+The reader only gets what they can open. A paywalled item never has a place of its own: it can \
+only go in the `also` list of a story whose `id` is free or unlocked. Use paywalled items to \
+find what matters: when one reports something important, look for a free or unlocked item on \
+the same event, from any outlet, and make that the story. When there is none, leave the \
+story out.
+
 Choose every story an informed reader of world news should know about this morning, judged on \
 its news value alone: how much it matters and how interesting it is. No outlet gets a quota or \
-a place because of its name, and a story is no less important because it is paywalled. There \
-is no maximum: a busy night gives a long brief, a quiet one a short brief. Leave out lifestyle, \
+a place because of its name. There is no maximum: a busy night gives a long brief, a quiet one a short brief. Leave out lifestyle, \
 travel, food, fashion, property, puzzles, personal finance tips, sport and videos, unless a \
 story matters beyond its own field. Leave out newsletters, live blogs and items that only list \
 other stories.
 
 The same event is often reported by several outlets, and more than once by one. Make it one \
 story: put the item to link in `id` and the others in its `also` list. The item in `id` must be \
-one the reader can open ("free" or "unlocked") whenever any of them is; among those, take the \
-most informative. Do not list an id twice anywhere in the answer.
+one the reader can open ("free" or "unlocked"); among those, take the most informative. Do not \
+list an id twice anywhere in the answer.
 
 Put each chosen item in exactly one place:
 - `stories`: the news, most important first.
 - `lines`: real news that matters less, worth one line (a court ruling, a deal, a datum).
-- `reads`: analysis, opinion, columns and features worth reading later. At most {max_reads}. Prefer \
-ones the reader can open, and a range: different subjects and outlets, not two pieces \
-making the same argument.
+- `reads`: analysis, opinion, columns and features worth reading later. At most {max_reads}. Choose \
+a range: different subjects and outlets, not two pieces making the same argument.
+
+The `id` of every story, line and read is free or unlocked; paywalled items appear only in \
+`also`.
 
 For every story, line and read, `source` is the `source` of its `id` item, exactly as given.
 
@@ -115,9 +122,9 @@ AGENT = """\
 Act as the editor described in `system`, for the items in `items` (the same id, source, \
 access, sections, time, headline and standfirst a model would be sent). Answer with one JSON \
 object that matches `schema` and nothing else: every key present, no other keys, each id used \
-once and only ids from `items`, `source` equal to the source of its id, a readable id for a \
-story whenever one of its items is readable, at least one story, `weight` 2 to 5, one to three \
-`topics`, at most {max_reads} `reads`. Pass it on stdin to `python -m brief ingest --model <your \
+once and only ids from `items`, `source` equal to the source of its id, a free or unlocked id \
+for every story, line and read (paywalled ids only in `also`), at least one story, `weight` 2 \
+to 5, one to three `topics`, at most {max_reads} `reads`. Pass it on stdin to `python -m brief ingest --model <your \
 name>`. If ingest lists problems, nothing was saved: fix them and run ingest again. If you \
 cannot write the brief, run `python -m brief ingest --fallback` to send the outlets' own \
 headlines instead.\

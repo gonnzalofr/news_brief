@@ -129,8 +129,10 @@ def from_model(data: dict, candidates: list[Article]) -> tuple[list[Story], list
     """Checks a model's answer against the articles it was given and keeps only what holds up.
 
     Unknown ids, repeats and empty text are dropped, weights are kept in 2-5 and topics to
-    three. A story whose id is paywalled links to a readable item in its `also` instead, when
-    there is one. Source and access always come from the items, never from the answer.
+    three. The reader gets only what they can open: a story whose id is paywalled links to a
+    readable item in its `also` instead, or is dropped when there is none; a paywalled line or
+    read is dropped, and so are paywalled `also` links. Source and access always come from the
+    items, never from the answer.
     Raises ValueError when nothing usable is left, so the next provider gets a turn.
     """
     if not isinstance(data, dict):
@@ -165,11 +167,13 @@ def from_model(data: dict, candidates: list[Article]) -> tuple[list[Story], list
             if t and t.lower() not in {x.lower() for x in topics}:
                 topics.append(t)
         others = [by_id[x] for x in (s.get("also") or []) if take(x)]
-        if not a.readable and (open_ := next((o for o in others if o.readable), None)):
-            # The link goes to a version the reader can open; the paywalled one is mentioned.
-            others = [a] + [o for o in others if o is not open_]
-            a = open_
-        also = [Also(o.url, **_origin(o)) for o in others]
+        if not a.readable:
+            # The link goes to a version the reader can open, or the story is left out.
+            open_ = next((o for o in others if o.readable), None)
+            if not open_:
+                continue
+            others, a = [o for o in others if o is not open_], open_
+        also = [Also(o.url, **_origin(o)) for o in others if o.readable]
         stories.append(Story(a.id, a.url, headline, summary, weight, topics[:3], text(s.get("place")), iso(a.published), also,
                              **_origin(a)))
     if not stories:
@@ -180,12 +184,12 @@ def from_model(data: dict, candidates: list[Article]) -> tuple[list[Story], list
     lines = [
         Line(a.id, a.url, text(x.get("text")), iso(a.published), **_origin(a))
         for x in data.get("lines") or []
-        if isinstance(x, dict) and text(x.get("text")) and (a := take(x.get("id")))
+        if isinstance(x, dict) and text(x.get("text")) and (a := take(x.get("id"))) and a.readable
     ]
     reads = [
         Read(a.id, a.url, a.title, text(x.get("note")), iso(a.published), **_origin(a))
         for x in data.get("reads") or []
-        if isinstance(x, dict) and (a := take(x.get("id")))
+        if isinstance(x, dict) and (a := take(x.get("id"))) and a.readable
     ][:prompt.MAX_READS]
     return stories, lines, reads
 
@@ -266,12 +270,17 @@ def problems(data: object, candidates: list[Article]) -> list[str]:
             given = item.get("source")
             if own and isinstance(given, str) and " ".join(given.split()).lower() != own.source.lower():
                 out.append(f"{at}.source must be {own.source!r}, the source of its id, not {given!r}")
-            if key == "stories" and own and not own.readable and isinstance(item.get("also"), list):
-                for j, x in enumerate(item["also"]):
-                    if isinstance(x, str) and x in by_id and by_id[x].readable:
-                        out.append(f"{at}.id {own.id!r} is paywalled but also[{j}] ({by_id[x].source}, {by_id[x].access}) "
-                                   "can be opened: make that one the id and put the paywalled one in also")
-                        break
+            if own and not own.readable:
+                also = item.get("also") if key == "stories" and isinstance(item.get("also"), list) else []
+                j = next((j for j, x in enumerate(also) if isinstance(x, str) and x in by_id and by_id[x].readable), None)
+                if j is not None:
+                    out.append(f"{at}.id {own.id!r} is paywalled but also[{j}] ({by_id[also[j]].source}, {by_id[also[j]].access}) "
+                               "can be opened: make that one the id and put the paywalled one in also")
+                elif key == "stories":
+                    out.append(f"{at}.id {own.id!r} is paywalled and the reader can't open it: make the id a free or "
+                               "unlocked item on the same event, with this one in also, or leave the story out")
+                else:
+                    out.append(f"{at}.id {own.id!r} is paywalled and the reader can't open it: leave it out")
             refs = [("id", item.get("id"))]
             if isinstance(item.get("also"), list):
                 refs += [(f"also[{j}]", x) for j, x in enumerate(item["also"])]
@@ -315,10 +324,11 @@ def digest(b: Brief, base_url: str = "") -> dict:
 
 
 def without_model(candidates: list[Article]) -> list[Story]:
-    """When no model answers: every item as its outlet wrote it, newest first, with no weights."""
+    """When no model answers: every item the reader can open, as its outlet wrote it, newest first, with no weights."""
     return [
         Story(a.id, a.url, a.title, a.standfirst, 0, [], "", iso(a.published), [], **_origin(a))
         for a in sorted(candidates, key=lambda a: a.published, reverse=True)
+        if a.readable
     ]
 
 
